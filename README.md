@@ -66,10 +66,15 @@ if __name__ == '__main__':
 3. Use `code_generation/create_script.py` to generate the python script and test it:
 
 ```
-mkdir test1
 ls test1
 #test_prime_numbers.py
-python code_generation/create_script.py "Compute the sum of the first 100 prime numbers" test1/test_prime_numbers.py test1/prime_numbers.py
+python code_generation/create_script.py \
+ "Compute the sum of the first 100 prime numbers" \
+ test1/test_prime_numbers.py \
+ test1/prime_numbers.py
+
+ls test1
+#generation_1.txt        prime_numbers.py        test_prime_numbers.py
 ```
 
 Result:
@@ -149,7 +154,13 @@ if __name__ == '__main__':
 ```
 ls test2
 #test_prime_numbers.py
-python code_generation/create_script.py "Compute the sum of the first N prime numbers" test2/test_prime_numbers.py test2/prime_numbers.py
+python code_generation/create_script.py \
+  "Compute the sum of the first N prime numbers" \
+  test2/test_prime_numbers.py \
+  test2/prime_numbers.py
+
+ls test2
+# prime_numbers.py        test_prime_numbers.py
 ```
 
 Result:
