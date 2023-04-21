@@ -107,9 +107,9 @@ If the test failed due to an error not associated with the code, return the inpu
         print(test_result.stdout)
     
     if test_result.returncode == 0:
-        print("Succesfully created code that passes tests: " + code)
+        print("Succesfully created code that passes tests:\n " + code)
     else:
-        print("Unsuccessfully created code: " + code)
+        print("Unsuccessfully created code:\n " + code)
 
 if __name__ == "__main__":
     main()
