@@ -1,12 +1,13 @@
-def prime_sum(N): 
-    prime_numbers = [2]
-    x = 3
-    while len(prime_numbers) < N:
-        for y in range(3,x,2):  # test all odd factors up to x-1
-            if x%y == 0:
-                x += 2
+def prime_sum(n):
+    prime_numbers = []
+    current_number = 2
+    while len(prime_numbers) < n:
+        is_prime = True
+        for prime in prime_numbers:
+            if current_number % prime == 0:
+                is_prime = False
                 break
-        else:
-            prime_numbers.append(x)
-            x += 2
+        if is_prime:
+            prime_numbers.append(current_number)
+        current_number += 1
     return sum(prime_numbers)
