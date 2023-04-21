@@ -75,7 +75,7 @@ python code_generation/create_script.py "Compute the sum of the first 100 prime 
 
 Result:
 
-```
+````
 Requesting code generation
 ================================================
 
@@ -122,7 +122,7 @@ Succesfully created code that passes tests: def prime_sum():
             prime_numbers.append(num)
         num += 2
     return sum(prime_numbers)
-```
+````
 
 #### Generic prime number counting
 
