@@ -4,6 +4,7 @@ from langchain.llms import OpenAI
 from langchain.vectorstores import Chroma
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.chains import RetrievalQA
+from langchain.indexes.vectorstore import VectorStoreIndexWrapper
 
 persist_directory = 'db'
 
@@ -24,3 +25,16 @@ print("PROMPT:")
 answer = qa.run(query)
 
 print(answer)
+
+
+
+print("================================")
+print("PROMPT2:")
+
+index = VectorStoreIndexWrapper(
+    vectorstore_cls=Chroma,
+    embedding=OpenAIEmbeddings(),
+    vectorstore_kwargs={"persist_directory": "db"})
+
+answer2 = index.query_with_sources(query)
+print(answer2)
