@@ -1,6 +1,4 @@
-# Chat GitHub
-
-Using LangChain to chat to a GitHub repository
+# Adventures in LLMs for Code Generation
 
 ## setup
 
@@ -44,6 +42,7 @@ optional arguments:
 
 ### Create your script
 
+Some examples of how it was used to make scripts.
 
 #### Sum of first 100 primes
 
@@ -207,9 +206,3 @@ Succesfully created code that passes tests: def prime_sum(N):
             x += 2
     return sum(prime_numbers)
 ````
-
-## Resources
-
-* https://python.langchain.com/en/latest/getting_started/getting_started.html
-* https://python.langchain.com/en/latest/modules/indexes/vectorstores/examples/chroma.html
-
