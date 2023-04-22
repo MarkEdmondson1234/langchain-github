@@ -1,5 +1,5 @@
 import openai
-import os, sys, argparse
+import os, sys, argparse, re
 import subprocess
 import shutil
 
@@ -14,21 +14,49 @@ config = vars(args)
 # Set up OpenAI API
 openai.api_key = os.environ["OPENAI_API_KEY"]
 
+message_history = [
+    {"role": "system", "content": "You are an expert AI to help create Python programs"}
+]
+
+def parse_code(code):
+    if "```" in code:
+        match = re.search('\`\`\`(python)?\n(.*?)\`\`\`\n', code, re.DOTALL)
+        if not match:
+            print("Couldn't find any code in API response\n", code)
+            return None
+        code = match.group(2)
+    
+    return code
+
 # Function to request code generation from the OpenAI API
 def request_code(prompt, temperature=0.5):
     print("Requesting code generation")
     print("================================================")
     print(prompt)
-    response = openai.Completion.create(
-        model="text-davinci-003",
-        prompt=prompt,
+    message_history.append(
+        {"role":"user", 
+         "content": prompt}
+    )
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=message_history,
         max_tokens=1500,
         n=1,
         stop=None,
         temperature=temperature,
     )
-    code = response.choices[0].text.strip()
+    code = response.choices[0].message.content.strip()
+
     # sometimes lots of weird prefix to the python code 
+    code = parse_code(code)
+
+    message_history.append(
+        {"role":"assistant",
+         "content": code}
+    )
+    # to keep token count under 4k
+    message_history.pop(0) 
+    
     return code
 
 # Save generated code to a file
@@ -53,7 +81,7 @@ def main():
         code_description = f"""
 Write Python test code using unittest that can test a Python script with this objective: {input_prompt}. 
 The test will be sitting in the same directory as the python script to be tested, which is called: {output_file}
-"""
+Only return the Python code. Comment the code well."""
     else:
         with open(test_file, "r") as f:
             tests = f.read()
@@ -91,7 +119,8 @@ The code needs to pass this test python code:
 This is the test code:\n {tests}\n\n
 The tests failed with this error:\n{test_result.stderr}\n
 Modify and return the code so that the test code will pass. Remove any invalid characters that create syntax errors.
-If the test failed due to an error not associated with the code, return the input code but starting with a commented line starting with NOCODEERROR and a description on what is wrong"""
+If the test failed due to an error not associated with the code, return the input code but starting with a commented line starting with NOCODEERROR and a description on what is wrong
+If the test failed due to the test file being wrong, return the corrected test code including a commented line starting with TESTFILERROR and a description on what is wrong"""
         code = request_code(error_description)
         shutil.copyfile(output_file, 
                         os.path.join(req_path, f"generation_{tries}.txt"))
@@ -99,7 +128,11 @@ If the test failed due to an error not associated with the code, return the inpu
         if "NOCODEERROR" in code:
             print("Error not associated with code?")
         
-        print ("New code run: " + code)
+        if "TESTFILEERROR" in code:
+            print("Error in test file - review?")
+            sys.exit()
+        
+        print (f"===Code run {tries}: \n {code}")
         save_to_file(output_file, code)
 
         # Rerun the tests

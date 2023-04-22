@@ -221,13 +221,22 @@ Succesfully created code that passes tests: def prime_sum(N):
 
 #### Generate the test_function too
 
-1. Make a test_file for your functionality
+1. Make a prompt you want a python function to do: "Compute how many hours there have been since now and given dates in YYYY-mm-dd:HH:MM format"
+2. Generate a test_file for your functionality
 
 ```
 python code_generation/create_script.py \
-  "Compute the sum of the first 100 prime numbers" \
-  test3/prime_numbers.py
+  "Compute how many hours there have been since now and given dates in YYYY-mm-dd:HH:MM format" \
+  test4/how_many_hours.py --test_file=test4/test_how_many_hours.py
 ```
 
-2. Make a prompt for your script: "Compute the sum of the first N prime numbers"
-3. Use `code_generation/create_script.py` to generate the python script and test it:
+It will exit for you to inspect the test file, since it needs this to be accurate to generate code successfully.
+
+3. Run the command again to generate python code that passes the tests.  It will iterate over the results if the test errors attempting to make a better file that will pass the tests.
+
+```
+python code_generation/create_script.py \
+  "Compute how many hours there have been since now and given dates in YYYY-mm-dd:HH:MM format" \
+  test4/how_many_hours.py --test_file=test4/test_how_many_hours.py
+````
+

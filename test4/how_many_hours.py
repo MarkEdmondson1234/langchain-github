@@ -1,11 +1,7 @@
+from datetime import datetime
 
-
-#NOCODEERROR: Test failed due to an error not associated with the code
-
-def hours_since_now(date):
-    from datetime import datetime
-    date_format = "%Y-%m-%d %H:%M"
-    now = datetime.now()
-    given_date = datetime.strptime(date, date_format)
-    diff = now - given_date
-    return diff.total_seconds() // 3600
+def hours_since(date_str):
+    date_time_obj = datetime.strptime(date_str, '%Y-%m-%d:%H:%M')
+    time_diff = datetime.now() - date_time_obj
+    hours_diff = time_diff.total_seconds() / 3600
+    return round(hours_diff, 2)
