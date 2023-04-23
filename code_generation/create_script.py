@@ -4,7 +4,7 @@ import subprocess
 import shutil
 from langchain.chat_models import ChatOpenAI
 from langchain.chains import ConversationChain
-from langchain.memory import ConversationBufferMemory
+from langchain.memory import ConversationBufferWindowMemory
 from langchain.callbacks import get_openai_callback
 
 
@@ -21,8 +21,7 @@ openai.api_key = os.environ["OPENAI_API_KEY"]
 
 chat = ChatOpenAI(temperature=0.4)
 
-memory = ConversationBufferMemory()
-memory.chat_memory.add_user_message("You are an expert AI to help create Python programs. You always enclose your code examples with three backticks (```)")
+memory = ConversationBufferWindowMemory(k=4)
 
 def parse_code(code):
     text = ""
@@ -36,6 +35,8 @@ def parse_code(code):
             text = match.group(1)
         if match and match.group(4) is not None:
             text = text + match.group(4)
+    else:
+        memory.chat_memory.add_user_message("You MUST always enclose your code examples with three backticks (```)")
     
     return code, text
 
@@ -45,6 +46,8 @@ def request_code(prompt, temperature=0.5):
     print("==    Requesting code generation              ==")
     print("================================================")
     
+    memory.chat_memory.add_user_message("You are an expert AI to help create Python programs. You always enclose your code examples with three backticks (```)")
+
     with get_openai_callback() as cb:
         chain = ConversationChain(
             llm=chat,
@@ -58,11 +61,11 @@ def request_code(prompt, temperature=0.5):
     print("==AI FEEDBACK==")
     print(text)
     
-    return code
+    return code + '\n\n"""\n' + text + '"""\n'
 
 # Save generated code to a file
-def save_to_file(filename, content):
-    with open(filename, "w") as file:
+def save_to_file(filename, content, type="w"):
+    with open(filename, type) as file:
         file.write(content)
 
 def create_test_file_and_exit(config):
@@ -72,16 +75,17 @@ def create_test_file_and_exit(config):
     input_prompt = config["prompt"]
     req_path = os.path.dirname(output_file)
 
-    print("================================")
-    print("Attempting to create test file.  Review it and if looks ok run again with this test file to generate code")
-    print("================================")
+    print("==CREATE TEST FILE ======================================================")
+    print("== Attempting to create test file.")  
+    print("== Review. If looks ok run again including test file to generate code")
+    print("=========================================================================")
     test_file = os.path.join(req_path, "test_" + os.path.basename(output_file))
     output_file = test_file
 
     # create prompt to pass in to LLM
     prompt = f"""
 Write Python test code using unittest that can test a Python script with this objective: {input_prompt}. 
-The test will be sitting in the same directory as the python script to be tested, which is called: {output_file}
+The test will be sitting in the same directory as the python script to be tested called: {output_file}
 Only return the Python code. Comment the code well."""
 
     code = request_code(prompt)
@@ -132,8 +136,6 @@ The code needs to pass this test python code:
         test_errors = test_result.stderr
         error_description = f"""The code you created in the last response has failed the test.
 Modify and return the code so that the test code will pass. Remove any invalid characters that create syntax errors.
-If the test failed due to an error not associated with the code, return the input code but starting with a commented line starting with NOCODEERROR and a description on what is wrong
-If and only if the test failed due to the test file being wrong, return the corrected test code including a commented line starting with TESTFILERROR and a description on what is wrong
 The tests failed with this error:\n{test_errors}\n
 """
         code = request_code(error_description)
@@ -141,14 +143,7 @@ The tests failed with this error:\n{test_errors}\n
         shutil.copyfile(output_file, 
                         os.path.join(req_path, f"generation_{tries}.txt"))
         
-        if "NOCODEERROR" in code:
-            print("Error not associated with code?")
-        
-        if "TESTFILEERROR" in code:
-            print("Error in test file - review?")
-            sys.exit()
-        
-        print (f"===Code retry {tries}: \n {code}")
+        print (f"===Code retry {tries}")
         save_to_file(output_file, code)
 
         # Rerun the tests

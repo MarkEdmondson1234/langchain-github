@@ -14,7 +14,11 @@ if __name__ == '__main__':
 
 
 """
-I apologize for the mistake again. It seems that I made an error in the formula for converting seconds to years. The correct conversion factor is 3.154e+7, not 3.154e+8 as I previously stated. Here's the corrected Python code:
+I apologize again for the mistake. It seems that I made an error in the calculation of the evaporation time. The correct formula is:
+
+t = 5120 * pi * G**2 * mass**3 / (hbar * c**4)
+
+Here's the corrected Python code:
 
 
 """
