@@ -21,7 +21,7 @@ openai.api_key = os.environ["OPENAI_API_KEY"]
 
 chat = ChatOpenAI(temperature=0.4)
 
-memory = ConversationBufferWindowMemory(k=4)
+memory = ConversationBufferWindowMemory(k=5)
 
 def parse_code(code):
     text = ""
