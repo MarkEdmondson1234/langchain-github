@@ -260,7 +260,7 @@ It often hallicinates the actual values for the earth mass etc. so it needs to h
 
 It states that the Earth weighs 1.98900E30 kgs and a black hole the same mass would evaporate in 1.15975E67 years.  Other than that its usually a pretty good test file, for example:
 
-````
+```
 import unittest
 from black_holes import compute_evaporation_time
 
@@ -295,8 +295,7 @@ I need this quite a lot at work.
 1. Make a prompt.  I had to iterate over this a few times to get the test file I wanted.
 
 ````
-export LLM_PROMPT="Create one python file that contains one helper function for making yaml files that are valid for Google Cloud Platform's Cloud Build service.  The test will use the python yaml generator to test the validity of the yaml, for an example task of
-building a Dockerfile for a python script."
+export LLM_PROMPT="Create one python file that contains one helper function for making yaml files that are valid for Google Cloud Platform's Cloud Build service.  The test will use the python yaml generator to test the validity of the yaml, for an example task of building a Dockerfile for a python script."
 ````
 
 2. Generate a test_file for your functionality
@@ -420,4 +419,4 @@ Prompt: Create one python file that contains one helper function for making yaml
 building a Dockerfile for a python script.
 Test File: test6/test_gcp_cloud_build.py
 Output File: test6/gcp_cloud_build.py
-```
+````
