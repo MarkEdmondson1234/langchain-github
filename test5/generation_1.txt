@@ -1,0 +1,8 @@
+import math
+
+def compute_evaporation_time(mass):
+    G = 6.6743e-11  # m^3 / (kg * s^2)
+    hbar = 1.0546e-34  # J * s
+    c = 2.9979e8  # m / s
+    t = 5120 * math.pi * G**2 * mass**3 / (hbar * c**4)
+    return t

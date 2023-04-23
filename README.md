@@ -240,3 +240,20 @@ python code_generation/create_script.py \
   test4/how_many_hours.py --test_file=test4/test_how_many_hours.py
 ````
 
+#### Cosmology programs
+
+https://www.vttoth.com/CMS/physics-notes/311-hawking-radiation-calculator
+
+1. Make a prompt
+
+````
+export LLM_PROMPT="Compute how long in seconds a black hole will evaporate via Hawking Radition at various masses in kilograms.  Show examples for a black hole the same mass as a human, the Moon, the Earth and the Sun"
+````
+
+2. Generate a test_file for your functionality
+
+```
+mkdir test5
+python code_generation/create_script.py $LLM_PROMPT \
+  test5/black_holes.py --test_file=test5/test_black_holes.py
+```
