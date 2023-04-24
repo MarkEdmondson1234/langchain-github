@@ -19,9 +19,11 @@ source ~/.zshenv
 
 This utility imports files from a directory into a Chroma vector store, which is then used to provide context to the LLM for when you ask questions about that directory.
 
-Make it executable:
+Configure location for vector store and make it executable:
 
 ```
+echo 'export CHROMA_DB_PATH=/Users/mark/dev/ml/langchain/read_github/' >> ~/.zshenv
+source ~/.zshenv
 chmod u+x qna/read_repo.py
 ```
 

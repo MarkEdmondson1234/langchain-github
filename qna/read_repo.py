@@ -1,3 +1,4 @@
+#!/Users/mark/dev/ml/langchain/read_github/langchain-github/env/bin/python
 import os, sys
 import pathlib
 import argparse
@@ -27,7 +28,7 @@ def get_repo_docs(repo_path, extension):
 
     ignore_path = repo / ignore
     if not ignore_path.is_dir():
-        raise ValueError("--ignore must be a directory")
+        print("WARNING: --ignore must be a directory")
     
     print('Ignoring %s' % ignore_path)
     
@@ -72,7 +73,7 @@ def main():
 
 	# Define the path of the repository and Chroma DB
 	REPO_PATH =config['repo']
-	CHROMA_DB_PATH = f'./chroma/{os.path.basename(REPO_PATH)}'
+	CHROMA_DB_PATH = f'{os.getenv("CHROMA_DB_PATH", default = "./chroma/")}{os.path.basename(REPO_PATH)}'
 
 	vector_db = None
 
