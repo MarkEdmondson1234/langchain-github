@@ -15,6 +15,39 @@ echo 'export OPENAI_API_KEY=12345' >> ~/.zshenv
 source ~/.zshenv
 ```
 
+## QnA over a directory
+
+This utility imports files from a directory into a Chroma vector store, which is then used to provide context to the LLM for when you ask questions about that directory.
+
+Make it executable:
+
+```
+chmod u+x qna/read_repo.py
+```
+
+On first run it will create the database, or you can renew the database by using the --reindex option.
+
+```
+# Read this directory ($PWD)
+python qna/read_repo.py $PWD
+```
+
+It lets you ask questions in the command line:
+
+```
+Loading Chroma DB from ./chroma/langchain-github.
+Using embedded DuckDB with persistence: data will be stored in: ./chroma/langchain-github
+
+Ask a question. CTRL + C to quit.
+```
+
+You can specify what file extensions you want to include in the database, and which folders to ignore.  The default ignores the `env/` folder, typically as its used for `venv`
+
+```
+# make a new database to include all .md/.py/.txt files
+python qna/read_repo.py $PWD --reindex --ext='.md,.py,.txt'
+```
+
 ## Code generation
 
 Make it executable:
