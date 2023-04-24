@@ -106,7 +106,7 @@ def main():
 		answer = qa({"query": user_input})
 		print('Answer:' + answer['result'])
 
-		print('----Document sources:')
+		print('== Document sources:')
 		for doc in answer['source_documents']:
 			print(' - ' + doc.metadata['source'])
 

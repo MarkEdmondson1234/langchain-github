@@ -46,6 +46,38 @@ You can specify what file extensions you want to include in the database, and wh
 ```
 # make a new database to include all .md/.py/.txt files
 python qna/read_repo.py $PWD --reindex --ext='.md,.py,.txt'
+Creating Chroma DB at ./chroma/langchain-github ...
+Ignoring /Users/mark/dev/ml/langchain/read_github/langchain-github/env
+Reading .md files
+Read 1 and ignored 9 .md files.
+Reading .py files
+Read 16 and ignored 11130 .py files.
+Reading .txt files
+Read 9 and ignored 170 .txt files.
+Read all files
+Using embedded DuckDB with persistence: data will be stored in: ./chroma/langchain-github
+
+Ask a question. CTRL + C to quit.
+What is this repo about?
+
+Answer:
+I don't know.
+== Document sources:
+ - README.md
+ - qna/read_repo.py
+ - README.md
+ - qna/read_repo.py
+
+
+Ask a question. CTRL + C to quit.
+summarise this readme
+
+Answer: This utility imports files from a directory into a Chroma vector store, which is then used to provide context to the LLM for when you ask questions about that directory. You can specify what file extensions you want to include and what directories to ignore when importing documents.
+== Document sources:
+ - argparse_example.py
+ - README.md
+ - qna/read_repo.py
+ - qna/read_repo.py
 ```
 
 ## Code generation
