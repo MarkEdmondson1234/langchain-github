@@ -41,7 +41,7 @@ def parse_code(code):
     return code, text
 
 # Function to request code generation from the OpenAI API
-def request_code(prompt, temperature=0.5):
+def request_code(prompt):
     print("================================================")
     print("==    Requesting code generation              ==")
     print("================================================")

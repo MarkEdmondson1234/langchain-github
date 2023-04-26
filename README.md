@@ -27,7 +27,29 @@ source ~/.zshenv
 chmod u+x qna/read_repo.py
 ```
 
-On first run it will create the database, or you can renew the database by using the --reindex option.
+Help here:
+
+```
+
+> ./qna/read_repo.py -h
+usage: read_repo.py [-h] [--reindex] [--ext EXT] [--ignore IGNORE] [--resummarise] repo
+
+Chat with a GitHub repository
+
+positional arguments:
+  repo             The GitHub repository on local disk
+
+optional arguments:
+  -h, --help       show this help message and exit
+  --reindex        Whether to re-index the doc database that supply context to the Q&A (default: False)
+  --ext EXT        Comma separated list of file extensions to include. Defaults to '.md,.py' (default: None)
+  --ignore IGNORE  Directory to ignore file imports from. Defaults to 'env/' (default: None)
+  --resummarise    Recreate the code.md files describing the code (default: False)
+```
+
+On first run it will create the database.  To make the QnA more useful, it will also generate .md files for any scripts you have indicated you want to read (e.g. script.py will have script.md generated in the same folder).  You can see examples in this repository.
+
+You can renew the database by using the --reindex option, and recreate the summaries with the --resummarise option.
 
 ```
 # Read this directory ($PWD)
@@ -487,3 +509,10 @@ building a Dockerfile for a python script.
 Test File: test6/test_gcp_cloud_build.py
 Output File: test6/gcp_cloud_build.py
 ````
+
+## Architecture
+
+Map-reduce for each function with its own test.
+Agent to create the tasks that the function will do.  Break up the tasks.  Give it a tool.
+
+Agent - Design the to do list to create a flask app that will 
