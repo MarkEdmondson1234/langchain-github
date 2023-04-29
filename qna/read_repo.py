@@ -1,18 +1,18 @@
-#!/Users/mark/dev/ml/langchain/read_github/langchain-github/env/bin/python
+#!/Users/mark/dev/ml/langchain/read_github/langchain_github/env/bin/python
 # change above to the location of your local Python venv installation
-import os, sys, re
+import sys, os
+
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(parent_dir)
+
 import pathlib
 import argparse
-from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.docstore.document import Document
 from langchain.text_splitter import CharacterTextSplitter
-from langchain.vectorstores import Chroma
 from langchain.llms import OpenAI
 from langchain.chains import RetrievalQA
 from langchain.chat_models import ChatOpenAI
-from langchain.chains import ConversationChain
-from langchain.memory import ConversationBufferWindowMemory
-from langchain.callbacks import get_openai_callback
+from my_llm import standards as my_llm
 
 parser = argparse.ArgumentParser(description="Chat with a GitHub repository",
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -24,27 +24,9 @@ parser.add_argument("--resummarise", action="store_true", help="Recreate the cod
 args = parser.parse_args()
 config = vars(args)
 
-memory = ConversationBufferWindowMemory(k=2)
+memory = my_llm.init_memory("read_repo")
 memory.chat_memory.add_user_message("You are an expert AI to help summarise code. You always enclose your code examples with three backticks (```)")
 chat = ChatOpenAI(temperature=0.4)
-
-def parse_code(code):
-    text = ""
-    if "```" in code:
-        match = re.search('(.+?)\`\`\`(python)?\n(.*?)\`\`\`\n(.+?)', code, re.DOTALL)
-        if not match:
-            print("Couldn't find any code in API response\n", code)
-            return None
-        code = match.group(3)
-        if match and match.group(1) is not None:
-            text = match.group(1)
-        if match and match.group(4) is not None:
-            text = text + match.group(4)
-    else:
-        memory.chat_memory.add_user_message("You MUST always enclose your code examples with three backticks (```)")
-        return None
-    
-    return code, text
 
 # Get Markdown documents from a repository
 def get_repo_docs(repo_path, extension):
@@ -92,11 +74,6 @@ def get_repo_docs(repo_path, extension):
         
     print("Read all files")
 
-# Save generated code to a file
-def save_to_file(filename, content, type="w"):
-    with open(filename, type) as file:
-        file.write(content)
-
 # Function to summarise code from the OpenAI API     
 def generate_code_summary(a_file):
     print("================================================")
@@ -110,32 +87,30 @@ def generate_code_summary(a_file):
     
     with open(a_file, "r") as file:
         code = file.read()
+    
+    if len(code) < 10:
+         print(f"Skipping generation as not enough information.  Got: {code}")
+         return
 
     # create prompt to pass in to LLM
     prompt = f"""Summarise what the code does below using Markdown syntax.  Comment on each function, and give some code examples of its uses: 
 {code}
 """
-    with get_openai_callback() as cb:
-        chain = ConversationChain(
-            llm=chat,
-            #verbose=True,
-            memory=memory)
-        summary = chain.predict(input=prompt)
-        print(cb)
+    summary = my_llm.request_llm(prompt, chat, memory)
     
     new_file_name = a_file.with_suffix('.md')
 
     ai = None
-    result = parse_code(summary)
+    result = my_llm.parse_code(summary, memory)
     if result is not None:
-        response, ai = parse_code(summary)
+        response = result
     else:
-         print("Got no code to parse")
-         response = summary
+        print("Got no code to parse")
+        response = summary
     
-    save_to_file(new_file_name, response)
+    my_llm.save_to_file(new_file_name, response)
     if ai:
-        save_to_file(new_file_name, ai, type ="a")
+        my_llm.save_to_file(new_file_name, ai, type ="a")
     
     return
     
@@ -144,6 +119,7 @@ def get_source_chunks(repo_path, extension):
 	source_chunks = []
 
 	# Create a CharacterTextSplitter object for splitting the text
+    # TODO: For .py files use https://python.langchain.com/en/latest/modules/indexes/text_splitters/examples/python.html
 	splitter = CharacterTextSplitter(separator=" ", chunk_size=1024, chunk_overlap=0)
 	for source in get_repo_docs(repo_path, extension):
 		for chunk in splitter.split_text(source.page_content):
@@ -153,52 +129,53 @@ def get_source_chunks(repo_path, extension):
 
 def main():
 
-	# Define the path of the repository and Chroma DB
-	REPO_PATH =config['repo']
-	CHROMA_DB_PATH = f'{os.getenv("CHROMA_DB_PATH", default = "./chroma/")}{os.path.basename(REPO_PATH)}'
-	print("Chrome DB path: {}".format(CHROMA_DB_PATH))
-	vector_db = None
+    # Define the path of the repository and Chroma DB
+    REPO_PATH =config['repo']
+    CHROMA_DB_PATH = f'{os.getenv("CHROMA_DB_PATH")}/read_repo/{os.path.basename(REPO_PATH)}'
+    print("Chrome DB path: {}".format(CHROMA_DB_PATH))
+    vector_db = None
 
 	# Check if Chroma DB exists
-	if not os.path.exists(CHROMA_DB_PATH) or config['reindex']:
+    if not os.path.exists(CHROMA_DB_PATH) or config['reindex']:
 		# Create a new Chroma DB
-		print(f'Creating Chroma DB at {CHROMA_DB_PATH} ...')
-		exts = '.md,.py'
-		if config['ext']:
-			exts = config['ext']
-		source_chunks = get_source_chunks(REPO_PATH, exts)
-		vector_db = Chroma.from_documents(source_chunks, OpenAIEmbeddings(), persist_directory=CHROMA_DB_PATH)
-		vector_db.persist()
+        exts = '.md,.py'
+        if config['ext']:
+            exts = config['ext']
+        source_chunks = get_source_chunks(REPO_PATH, exts)
+        vector_db = my_llm.new_vector_db(CHROMA_DB_PATH, source_chunks)
 
-	else:
-		# Load an existina Chroma DB
-		print(f'Loading Chroma DB from {CHROMA_DB_PATH}.')
-		vector_db = Chroma(persist_directory=CHROMA_DB_PATH, embedding_function=OpenAIEmbeddings())
+    else:
+		# Load an existing Chroma DB
+        vector_db = my_llm.load_vector_db(CHROMA_DB_PATH)
+    
+    if vector_db:
 
-	# Load a QA chain
-	qa = RetrievalQA.from_chain_type(
-		llm=OpenAI(), 
-		chain_type="stuff",
-		retriever=vector_db.as_retriever(), 
-		return_source_documents=True)
+        # Load a QA chain
+        qa = RetrievalQA.from_chain_type(
+            llm=OpenAI(), 
+            chain_type="stuff",
+            retriever=vector_db.as_retriever(), 
+            return_source_documents=True)
+    else:
+         print("Error creating vector database")
+         sys.exit(1)
 	
-	while True:
-		print('\n\033[31m' + 'Ask a question. CTRL + C to quit.' + '\033[m')
-		user_input = input()
-		print('\033[31m')
-		answer = qa({"query": user_input})
-		print('Answer:' + answer['result'])
+    while True:
+        print('\n\033[31m' + 'Ask a question. CTRL + C to quit.' + '\033[m')
+        user_input = input()
+        print('\033[31m')
+        answer = qa({"query": user_input})
+        print('Answer:' + answer['result'])
 
-		print('== Document sources:')
-		for doc in answer['source_documents']:
-			print(' - ' + doc.metadata['source'])
+        print('== Document sources:')
+        for doc in answer['source_documents']:
+            print(' - ' + doc.metadata['source'])
 
-		print('\033[m')
+        print('\033[m')
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print()
-        print('User exited.')
+        print('  - User exit.')
         sys.exit(1)

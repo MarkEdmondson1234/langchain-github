@@ -1,0 +1,10 @@
+from flask import Flask, request, jsonify
+import openai
+import os
+
+
+"""
+To create a Flask app that can be used as a basis for a chatbot via a web browser, you can start by importing the necessary modules:
+
+
+"""

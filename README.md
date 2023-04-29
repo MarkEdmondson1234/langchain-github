@@ -22,7 +22,8 @@ This utility imports files from a directory into a Chroma vector store, which is
 Configure location for vector store and make it executable:
 
 ```
-echo 'export CHROMA_DB_PATH=/Users/mark/dev/ml/langchain/read_github/' >> ~/.zshenv
+echo 'export CHROMA_DB_PATH=/Users/mark/dev/ml/chroma/' >> ~/.zshenv
+echo 'export CHROMA_DB_PATH=/Users/mark/dev/ml/chat_history/' >> ~/.zshenv
 source ~/.zshenv
 chmod u+x qna/read_repo.py
 ```
@@ -515,4 +516,3 @@ Output File: test6/gcp_cloud_build.py
 Map-reduce for each function with its own test.
 Agent to create the tasks that the function will do.  Break up the tasks.  Give it a tool.
 
-Agent - Design the to do list to create a flask app that will 
