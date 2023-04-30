@@ -1,18 +1,4 @@
-history = TimedChatMessageHistory("my_memory")
-history.add_user_message("Hello!")
-history.add_ai_message("Hi there!")
-history.add_user_message("How are you?")
-history.add_ai_message("I'm doing well, thanks for asking.")
-history.clear()
-history.load_chat_history()
-
+This code defines several classes and functions related to storing and manipulating chat message history. The TimedChatMessage class extends the ChatMessage class and adds a timestamp attribute. The TimedChatMessageHistory class extends the BaseChatMessageHistory class and adds methods for adding user and AI messages to the chat history, clearing the history, loading the chat history from a file, and applying the chat history to a ConversationTokenBufferMemory object. The code also includes two utility functions for converting TimedChatMessage objects to and from dictionaries with ISO-formatted timestamps. Finally, there are some commented-out lines of code demonstrating how to use the TimedChatMessageHistory class.
 
 """
-This code defines a class `TimedChatMessageHistory` that extends `BaseChatMessageHistory` and adds timestamps to messages. It also defines several helper functions for working with `TimedChatMessage` objects, such as `timed_messages_to_dict()` and `timed_messages_from_dict()`. 
-
-The `TimedChatMessageHistory` class has several methods for adding messages to the chat history, clearing the chat history, and loading the chat history from a file. The `timed_messages_to_dict()` function converts a list of `TimedChatMessage` objects to a list of dictionaries, and the `timed_messages_from_dict()` function does the reverse.
-
-Here's an example of how you might use this code:
-
-
 """

@@ -25,7 +25,7 @@ args = parser.parse_args()
 config = vars(args)
 
 memory = my_llm.init_memory("read_repo")
-memory.chat_memory.add_user_message("You are an expert AI to help summarise code. You always enclose your code examples with three backticks (```)")
+memory.add_user_message("You are an expert AI to help summarise code. You always enclose your code examples with three backticks (```)")
 chat = ChatOpenAI(temperature=0.4)
 
 # Get Markdown documents from a repository
@@ -76,14 +76,15 @@ def get_repo_docs(repo_path, extension):
 
 # Function to summarise code from the OpenAI API     
 def generate_code_summary(a_file):
-    print("================================================")
-    print(f"Requesting code summary for {a_file}   ")
-    print("================================================")
     
     new_file_name = a_file.with_suffix('.md')
     if os.path.isfile(new_file_name) and not config['resummarise']:
-         print(f"Skipping generating summary as found existing code summary file: {new_file_name}")
+         #print(f"Skipping generating summary as found existing code summary file: {new_file_name}")
          return
+    
+    print("================================================")
+    print(f"Requesting code summary for {a_file}   ")
+    print("================================================")
     
     with open(a_file, "r") as file:
         code = file.read()

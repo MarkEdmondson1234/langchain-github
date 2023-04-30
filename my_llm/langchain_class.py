@@ -1,13 +1,18 @@
 from langchain.schema import ChatMessage, BaseChatMessageHistory
+from langchain.memory import ConversationTokenBufferMemory
+from langchain.llms import OpenAI
 from langchain.schema import messages_from_dict, messages_to_dict
 import os, json
 
 from datetime import datetime
+from dateutil.parser import parse
 
 class TimedChatMessage(ChatMessage):
-    def __init__(self, message, role, timestamp=None):
-        super().__init__(message, role)
-        self.timestamp = timestamp or datetime.utcnow()
+    timestamp: datetime = None
+
+    def __init__(self, content, role, timestamp=None):
+        super().__init__(content=content, role=role, timestamp=timestamp or datetime.utcnow())
+
 
 class TimedChatMessageHistory(BaseChatMessageHistory):
     memory_namespace: str
@@ -24,18 +29,31 @@ class TimedChatMessageHistory(BaseChatMessageHistory):
             print('Found no MESSAGE_HISTORY set')
             return None
 
+    def _datetime_converter(self, o):
+        if isinstance(o, datetime):
+            return o.isoformat()
+        raise TypeError("Object of type datetime is not JSON serializable")
+    
+    def _write_to_disk(self, filepath, data):
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+
+        # Append the new data as a JSON line
+        with open(filepath, 'a') as f:
+            json.dump(data, f, default=self._datetime_converter)
+            f.write('\n')
+
     def add_user_message(self, message):
-        timed_message = TimedChatMessage(message, "user")
+        timed_message = TimedChatMessage(content=message, role="user")
         if self.memory_namespace:
-            with open(self.get_mem_path(self.memory_namespace), 'w') as f:
-                json.dump(f, timed_message)
+            mem_path = self.get_mem_path(self.memory_namespace)
+            self._write_to_disk(mem_path, timed_message.dict())
         self.messages.append(timed_message)
 
     def add_ai_message(self, message):
-        timed_message = TimedChatMessage(message, "ai")
+        timed_message = TimedChatMessage(content=message, role="ai")
         if self.memory_namespace:
-            with open(self.get_mem_path(self.memory_namespace), 'w') as f:
-                json.dump(f, timed_message)
+            mem_path = self.get_mem_path(self.memory_namespace)
+            self._write_to_disk(mem_path, timed_message.dict())
         self.messages.append(timed_message)
     
     def clear(self):
@@ -46,19 +64,37 @@ class TimedChatMessageHistory(BaseChatMessageHistory):
 
     def load_chat_history(self):
         if self.memory_namespace:
-            mem_path = self.get_mem_path(self.memory_namespace)
-            if mem_path and os.path.isfile(mem_path):
-                print(f'Loading chat history from {mem_path}')
-                with open(mem_path, 'r') as f:
-                    lines = f.readlines()
-                    for line in lines:
+            filepath = self.get_mem_path(self.memory_namespace)
+            if filepath and os.path.isfile(filepath):
+                print(f'Loading chat history from {filepath}')
+                with open(filepath, 'r') as f:
+                    for line in f:
                         message_data = json.loads(line)
-                        timed_message = TimedChatMessage(message_data['text'], message_data['sender'])
+                        message_data['timestamp'] = parse(message_data['timestamp'])
+                        message_data.pop('additional_kwargs', None)
+                        timed_message = TimedChatMessage(**message_data)
                         self.messages.append(timed_message)
             else:
                 print("Chat history file does not exist.")
         else:
             print("Memory namespace not set.")
+    
+    def apply_buffer_to_memory(self, max_token_limit: int =3000):
+
+        short_term_memory = ConversationTokenBufferMemory(
+            llm=OpenAI(), 
+            max_token_limit=max_token_limit, 
+            return_messages=True)
+
+        # Load messages from ChatMessageHistory into ConversationTokenBufferMemory
+        for message in self.messages:
+            print(message.content)
+            if message.role == "user":
+                short_term_memory.save_context({"input": message.content}, {"output": ""})
+            elif message.role == "ai":
+                short_term_memory.save_context({"input": ""}, {"output": message.content})
+        
+        return short_term_memory
 
 def timed_messages_to_dict(messages):
     dicts = messages_to_dict(messages)

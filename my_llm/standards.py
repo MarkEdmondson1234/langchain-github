@@ -14,37 +14,15 @@ from langchain.vectorstores import Chroma
 from langchain.embeddings.openai import OpenAIEmbeddings
 
 from .langchain_class import TimedChatMessageHistory
-from langchain.memory import ConversationTokenBufferMemory
-from langchain.llms import OpenAI
+
+
 
 # Set up OpenAI API
 openai.api_key  = os.environ["OPENAI_API_KEY"]
 
-def apply_buffer_to_memory(chat_history, max_token_limit: int =3000):
-
-    if isinstance(chat_history, ConversationTokenBufferMemory):
-        #TODO: but now won't write to disk or have a timestamp - modify TimedChatMessageHistory
-        return chat_history
-
-    memory = ConversationTokenBufferMemory(
-        llm=OpenAI(), 
-        max_token_limit=max_token_limit, 
-        return_messages=True)
-
-    # Load messages from ChatMessageHistory into ConversationTokenBufferMemory
-    for message in chat_history.messages:
-        if message.role == "user":
-            memory.save_context({{"input": message.text}}, {{}})
-        elif message.role == "ai":
-            memory.save_context({{}}, {{"output": message.text}})
-    
-    return memory
-
 def init_memory(memory_namespace):
     memory = TimedChatMessageHistory(memory_namespace)
     memory.load_chat_history()
-
-    memory = apply_buffer_to_memory(memory)
     
     return memory
 
@@ -62,7 +40,7 @@ def parse_code(code, memory=None):
             text = text + match.group(4)
     else:
         if memory:
-            memory.chat_memory.add_user_message("You MUST always enclose your code examples with three backticks (```)")
+            memory.add_user_message("You MUST always enclose your code examples with three backticks (```)")
         
     print("==AI FEEDBACK==")
     print(text)
@@ -88,7 +66,7 @@ def reset_totals():
     totals = _totals
     return(totals)
 
-def request_llm(prompt, chat, memory, verbose=False, memory_namespace=None):
+def request_llm(prompt, chat, memory, verbose=False):
     """
     Function to request code generation from the OpenAI API
     """
@@ -97,13 +75,15 @@ def request_llm(prompt, chat, memory, verbose=False, memory_namespace=None):
     if verbose: 
         print(prompt)
     
-    memory=apply_buffer_to_memory(memory, max_token_limit=3000)
+    memory.add_user_message(prompt)
+    
+    short_term_memory=memory.apply_buffer_to_memory(max_token_limit=3000)
     
     with get_openai_callback() as cb:
         chain = ConversationChain(
             llm=chat,
             verbose=verbose,
-            memory=memory)
+            memory=short_term_memory)
         output = chain.predict(input=prompt)
         print(cb)
         totals["total_tokens"] += cb.total_tokens
@@ -113,10 +93,12 @@ def request_llm(prompt, chat, memory, verbose=False, memory_namespace=None):
         totals["total_cost"] += cb.total_cost
         print(f"Totals: {totals}")
     
+    memory.add_ai_message(output)
+    
     return output
 
 def request_code(prompt, chat, memory, verbose=False):
-    memory.chat_memory.add_user_message("You are an expert AI to help create Python programs. You always enclose your code examples with three backticks (```)")
+    memory.add_user_message("You are an expert AI to help create Python programs. You always enclose your code examples with three backticks (```)")
 
     output = request_llm(prompt, chat, memory, verbose=verbose)
     code = parse_code(output, memory)

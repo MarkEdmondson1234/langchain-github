@@ -3,3 +3,4 @@ openai
 chromadb
 tiktoken
 requests
+python-dateutil
