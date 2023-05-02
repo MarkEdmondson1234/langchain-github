@@ -1,0 +1,22 @@
+from google.cloud import bigquery
+import json
+
+def upload_to_bigquery(json_file_path, dataset_id, table_id):
+    # Connect to the BigQuery service and upload the JSON data
+    client = bigquery.Client()
+    table_ref = client.dataset(dataset_id).table(table_id)
+    table = client.get_table(table_ref)
+    rows_to_insert = []
+    with open(json_file_path, 'r') as f:
+        for line in f:
+            row = json.loads(line)
+            rows_to_insert.append(row)
+    errors = client.insert_rows(table, rows_to_insert)
+    return errors
+
+
+"""
+Sure, I can help you with that! Here's some Python code that should upload a JSON newline delimited file to BigQuery, but only the new lines:
+
+
+"""

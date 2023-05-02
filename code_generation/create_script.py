@@ -41,9 +41,11 @@ def create_test_file_and_exit(config, test_file):
 
     # create prompt to pass in to LLM
     prompt = f"""
-Write Python test code using unittest that can test a Python script with this objective: {input_prompt}. 
+Write Python test code using unittest that will unit test an existing Python script in the same directory that has been written with this objective: 
+{input_prompt}. 
+Do not call any external APIs or services, use mocking functions instead. The test should be able to be run in a self contained manner.
 The test will be sitting in the same directory as the python script to be tested called: {output_file}
-Only return the Python code. Comment the code well."""
+"""
 
     code = my_llm.request_code(prompt, chat, memory)
 

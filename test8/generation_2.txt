@@ -1,0 +1,8 @@
+pip install google-cloud-bigquery
+
+
+"""
+I'm sorry to hear that the code didn't pass the test. The error message indicates that the `google-cloud-bigquery` module is not installed. To fix this, you can install the module using pip:
+
+
+"""

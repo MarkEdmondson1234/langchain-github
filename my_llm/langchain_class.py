@@ -1,8 +1,13 @@
+import os, json
+
 from langchain.schema import ChatMessage, BaseChatMessageHistory
 from langchain.memory import ConversationTokenBufferMemory
 from langchain.llms import OpenAI
-from langchain.schema import messages_from_dict, messages_to_dict
-import os, json
+
+from langchain.docstore.document import Document
+from langchain.text_splitter import CharacterTextSplitter
+from langchain.vectorstores import Chroma
+from langchain.embeddings.openai import OpenAIEmbeddings
 
 from datetime import datetime
 from dateutil.parser import parse
@@ -11,7 +16,9 @@ class TimedChatMessage(ChatMessage):
     timestamp: datetime = None
 
     def __init__(self, content, role, timestamp=None):
-        super().__init__(content=content, role=role, timestamp=timestamp or datetime.utcnow())
+        super().__init__(content=content, 
+                         role=role, 
+                         timestamp=timestamp or datetime.utcnow())
 
 
 class TimedChatMessageHistory(BaseChatMessageHistory):
@@ -22,13 +29,32 @@ class TimedChatMessageHistory(BaseChatMessageHistory):
         self.memory_namespace = memory_namespace
         self.messages = []
 
-    def get_mem_path(self, memory_namespace):
+    def get_mem_path(self):
+        if not self.memory_namespace:
+            print("No memory namespace specified")
+            return None
+
         if os.getenv('MESSAGE_HISTORY'):
-            return os.path.join(os.getenv('MESSAGE_HISTORY'), memory_namespace, "memory.json")
+            return os.path.join(os.getenv('MESSAGE_HISTORY'), 
+                                self.memory_namespace, 
+                                "memory.json")
         else:
             print('Found no MESSAGE_HISTORY set')
             return None
-
+        
+    def get_mem_vectorstore(self):
+        if not self.memory_namespace:
+            print("No memory namespace specified")
+            return None
+        
+        if os.getenv('MESSAGE_HISTORY'):
+            return os.path.join(os.getenv('MESSAGE_HISTORY'), 
+                                self.memory_namespace, 
+                                "chroma/")
+        else:
+            print('Found no MESSAGE_HISTORY set')
+            return None
+        
     def _datetime_converter(self, o):
         if isinstance(o, datetime):
             return o.isoformat()
@@ -45,35 +71,45 @@ class TimedChatMessageHistory(BaseChatMessageHistory):
     def add_user_message(self, message):
         timed_message = TimedChatMessage(content=message, role="user")
         if self.memory_namespace:
-            mem_path = self.get_mem_path(self.memory_namespace)
-            self._write_to_disk(mem_path, timed_message.dict())
+            mem_path = self.get_mem_path()
+            if mem_path:
+                self._write_to_disk(mem_path, timed_message.dict())
         self.messages.append(timed_message)
 
     def add_ai_message(self, message):
         timed_message = TimedChatMessage(content=message, role="ai")
         if self.memory_namespace:
-            mem_path = self.get_mem_path(self.memory_namespace)
-            self._write_to_disk(mem_path, timed_message.dict())
+            mem_path = self.get_mem_path()
+            if mem_path:
+                self._write_to_disk(mem_path, timed_message.dict())
         self.messages.append(timed_message)
     
     def clear(self):
         if self.memory_namespace:
-            with open(self.get_mem_path(self.memory_namespace), 'w') as f:
-                f.write("[]")
+            mem_path = self.get_mem_path()
+            if mem_path and os.path.isfile(mem_path):
+                with open(self.get_mem_path(), 'w') as f:
+                    f.write("{}\n")
+                print("Cleared memory")
         self.messages = []
+    
+    def print_messages(self):
+        for message in self.messages:
+            print(message)
 
     def load_chat_history(self):
         if self.memory_namespace:
-            filepath = self.get_mem_path(self.memory_namespace)
-            if filepath and os.path.isfile(filepath):
-                print(f'Loading chat history from {filepath}')
-                with open(filepath, 'r') as f:
+            mem_path = self.get_mem_path()
+            if mem_path and os.path.isfile(mem_path):
+                print(f'Loading chat history from {mem_path}')
+                with open(mem_path, 'r') as f:
                     for line in f:
                         message_data = json.loads(line)
                         message_data['timestamp'] = parse(message_data['timestamp'])
                         message_data.pop('additional_kwargs', None)
                         timed_message = TimedChatMessage(**message_data)
                         self.messages.append(timed_message)
+                print('Loaded')
             else:
                 print("Chat history file does not exist.")
         else:
@@ -86,7 +122,7 @@ class TimedChatMessageHistory(BaseChatMessageHistory):
             max_token_limit=max_token_limit, 
             return_messages=True)
 
-        # Load messages from ChatMessageHistory into ConversationTokenBufferMemory
+        # Load messages from TimedChatMessageHistory into ConversationTokenBufferMemory
         for message in self.messages:
             print(message.content)
             if message.role == "user":
@@ -95,19 +131,37 @@ class TimedChatMessageHistory(BaseChatMessageHistory):
                 short_term_memory.save_context({"input": ""}, {"output": message.content})
         
         return short_term_memory
+    
+    def save_vectorstore_memory(self):
+        db_path = self.get_mem_vectorstore()
+        print(f'Creating Chroma DB at {db_path} ...')
+        source_chunks = self._get_source_chunks()
+        vector_db = Chroma.from_documents(source_chunks, 
+                                          OpenAIEmbeddings(), 
+                                          persist_directory=db_path)
+        vector_db.persist()
 
-def timed_messages_to_dict(messages):
-    dicts = messages_to_dict(messages)
-    for message_dict, message in zip(dicts, messages):
-        message_dict["timestamp"] = message.timestamp.isoformat()
-    return dicts
+        return vector_db
 
-def timed_messages_from_dict(dicts):
-    messages = messages_from_dict(dicts)
-    for message_dict, message in zip(dicts, messages):
-        message.timestamp = datetime.fromisoformat(message_dict["timestamp"])
-    return messages
+    def _get_memory_documents(self):
+        docs = []
+        for message in self.messages:
+            doc = Document(page_content=message.content, 
+                           metadata={
+                               "role": message.role,
+                               "timestamp": str(message.timestamp)
+                           })
+            docs.append(doc)
+        return docs
 
-#history = TimedChatMessageHistory()
-#history.add_user_message("hi!")
-#history.add_ai_message("whats up?")
+    def _get_source_chunks(self):
+        source_chunks = []
+
+        # Create a CharacterTextSplitter object for splitting the text
+        splitter = CharacterTextSplitter(separator=" ", chunk_size=1024, chunk_overlap=0)
+        for source in self._get_memory_documents():
+            for chunk in splitter.split_text(source.page_content):
+                source_chunks.append(Document(page_content=chunk, metadata=source.metadata))
+
+        return source_chunks
+

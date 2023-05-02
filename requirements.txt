@@ -4,3 +4,4 @@ chromadb
 tiktoken
 requests
 python-dateutil
+google-cloud-bigquery
