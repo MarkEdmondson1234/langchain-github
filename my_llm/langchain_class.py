@@ -54,7 +54,8 @@ class TimedChatMessageHistory(BaseChatMessageHistory):
         else:
             print('Found no MESSAGE_HISTORY set')
             return None
-        
+
+    @staticmethod  
     def _datetime_converter(self, o):
         if isinstance(o, datetime):
             return o.isoformat()
@@ -126,9 +127,11 @@ class TimedChatMessageHistory(BaseChatMessageHistory):
         for message in self.messages:
             print(message.content)
             if message.role == "user":
-                short_term_memory.save_context({"input": message.content}, {"output": ""})
+                short_term_memory.save_context({"input": message.content}, 
+                                               {"output": ""})
             elif message.role == "ai":
-                short_term_memory.save_context({"input": ""}, {"output": message.content})
+                short_term_memory.save_context({"input": ""}, 
+                                               {"output": message.content})
         
         return short_term_memory
     
@@ -143,6 +146,20 @@ class TimedChatMessageHistory(BaseChatMessageHistory):
 
         return vector_db
 
+    def _get_source_chunks(self):
+        source_chunks = []
+
+        # Create a CharacterTextSplitter object for splitting the text
+        splitter = CharacterTextSplitter(separator=" ", 
+                                         chunk_size=1024, 
+                                         chunk_overlap=0)
+        for source in self._get_memory_documents():
+            for chunk in splitter.split_text(source.page_content):
+                source_chunks.append(Document(page_content=chunk, 
+                                              metadata=source.metadata))
+
+        return source_chunks
+    
     def _get_memory_documents(self):
         docs = []
         for message in self.messages:
@@ -154,14 +171,5 @@ class TimedChatMessageHistory(BaseChatMessageHistory):
             docs.append(doc)
         return docs
 
-    def _get_source_chunks(self):
-        source_chunks = []
 
-        # Create a CharacterTextSplitter object for splitting the text
-        splitter = CharacterTextSplitter(separator=" ", chunk_size=1024, chunk_overlap=0)
-        for source in self._get_memory_documents():
-            for chunk in splitter.split_text(source.page_content):
-                source_chunks.append(Document(page_content=chunk, metadata=source.metadata))
-
-        return source_chunks
 
