@@ -135,12 +135,21 @@ class TimedChatMessageHistory(BaseChatMessageHistory):
         
         return short_term_memory
     
-    def save_vectorstore_memory(self):
+    def load_vectorstore_memory(self, embedding=OpenAIEmbeddings()):
+        db_path = self.get_mem_vectorstore()
+
+        print(f'Loading Chroma DB from {db_path}.')
+        vector_db = Chroma(persist_directory=db_path, 
+                           embedding_function=embedding)
+
+        return vector_db
+    
+    def save_vectorstore_memory(self, embedding=OpenAIEmbeddings()):
         db_path = self.get_mem_vectorstore()
         print(f'Creating Chroma DB at {db_path} ...')
         source_chunks = self._get_source_chunks()
         vector_db = Chroma.from_documents(source_chunks, 
-                                          OpenAIEmbeddings(), 
+                                          embedding, 
                                           persist_directory=db_path)
         vector_db.persist()
 
