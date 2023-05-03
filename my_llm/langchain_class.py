@@ -6,6 +6,7 @@ from langchain.llms import OpenAI
 
 from langchain.memory import ConversationSummaryBufferMemory
 
+from langchain.chains import ConversationalRetrievalChain
 
 from langchain.docstore.document import Document
 from langchain.text_splitter import CharacterTextSplitter
@@ -148,11 +149,13 @@ class TimedChatMessageHistory(BaseChatMessageHistory):
     
     def apply_buffer_to_memory(self, 
                                max_token_limit: int =3000,
-                               llm=OpenAI()):
+                               llm=OpenAI(),
+                               memory_key: str ='history'):
 
         short_term_memory = ConversationTokenBufferMemory(
             llm=llm, 
             max_token_limit=max_token_limit, 
+            memory_key=memory_key,
             return_messages=True)
 
         # Load messages from TimedChatMessageHistory into ConversationTokenBufferMemory
@@ -196,10 +199,36 @@ class TimedChatMessageHistory(BaseChatMessageHistory):
                            embedding_function=embedding)
 
         return vector_db
+
+    @staticmethod
+    def _get_chat_history(inputs) -> str:
+        res = []
+        for human, ai in inputs:
+            res.append(f"Human:{human}\nAI:{ai}")
+        return "\n".join(res)
+    
+    def question_memory(self, question: str, llm=OpenAI(temperature=0)):
+        db = self.load_vectorstore_memory()
+
+        self.add_user_message(question)
+
+        qa_memory = self.apply_buffer_to_memory(llm=llm, memory_key="chat_history")
+
+        qa = ConversationalRetrievalChain.from_llm(
+            llm, 
+            db.as_retriever(), 
+            get_chat_history=self._get_chat_history,
+            memory=qa_memory)
+        
+        result = qa({"question": question})
+        answer = result["answer"]
+        self.add_ai_message(answer)
+
+        return answer
     
     def save_vectorstore_memory(self, embedding=OpenAIEmbeddings()):
         db_path = self.get_mem_vectorstore()
-        print(f'Creating Chroma DB at {db_path} ...')
+        print(f'Saving Chroma DB at {db_path} ...')
         source_chunks = self._get_source_chunks()
         vector_db = Chroma.from_documents(source_chunks, 
                                           embedding, 

@@ -14,7 +14,7 @@ chat = ChatOpenAI(temperature=0.4)
 memory = my_llm.init_memory("debugger")
 memory.clear()
 
-prompt = "How many ways are there to travel between the north pole and Copenhagen directly?"
+prompt = "How many ways are there to travel between the north pole and Copenhagen directly? Also output a random animal with prefix: ANIMAL:"
 
 answer = my_llm.request_llm(prompt, chat, memory)
 
@@ -35,3 +35,6 @@ print("Summary")
 print(summary)
 
 memory.save_vectorstore_memory()
+
+answer3 = memory.question_memory("What random animal have you said?")
+print(answer3)
