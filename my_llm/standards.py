@@ -61,7 +61,7 @@ def reset_totals():
             "prompt_tokens":0,
             "completion_tokens": 0,
             "successful_requests": 0,
-            "total_cost":0.0
+            "total_cost - $":0.0
         }
     totals = _totals
     return(totals)
@@ -71,7 +71,7 @@ def request_llm(prompt, chat, memory, verbose=False):
     Function to request code generation from the OpenAI API
     """
     print("================================================")
-    print(f"==    Requesting LLM {chat.model_name}  ==")
+    print(f"==    Requesting LLM {chat.model_name}  ")
     if verbose: 
         print(prompt)
     
@@ -85,13 +85,13 @@ def request_llm(prompt, chat, memory, verbose=False):
             verbose=verbose,
             memory=short_term_memory)
         output = chain.predict(input=prompt)
-        print(cb)
+        #print(cb)
         totals["total_tokens"] += cb.total_tokens
         totals["prompt_tokens"] += cb.prompt_tokens
         totals["completion_tokens"] += cb.completion_tokens
         totals["successful_requests"] += cb.successful_requests
         totals["total_cost"] += cb.total_cost
-        print(f"Totals: {totals}")
+        print(f"Usage: {totals}")
     
     memory.add_ai_message(output)
     
