@@ -14,7 +14,7 @@ chat = ChatOpenAI(temperature=0.4)
 memory = my_llm.init_memory("debugger")
 memory.clear()
 
-prompt = "List how many ways there are to catch a cat if it has escaped from your house and you need it back inside so you can go to bed"
+prompt = "How many ways are there to travel between the north pole and Copenhagen directly?"
 
 answer = my_llm.request_llm(prompt, chat, memory)
 
@@ -26,5 +26,12 @@ Repeat the answer below but in Danish, or if you don't know just say 'munch munc
 """
 
 answer2 = my_llm.request_llm(prompt2, chat, memory)
+
+#memory.print_messages()
+
+summary = memory.apply_summarise_to_memory()
+
+print("Summary")
+print(summary)
 
 memory.save_vectorstore_memory()
