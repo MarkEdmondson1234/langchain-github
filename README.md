@@ -38,11 +38,73 @@ You may need this if changed previously:
 gcloud auth application-default login
 ```
 
+```
 # specify the GCP project you want to publish PubSub messages to, or it will take the gcloud default.
 echo 'export GOOGLE_CLOUD_PROJECT=12345' >> ~/.zshenv
+
+# location for where to save .json newline delimited messages
+echo 'export MESSAGE_HISTORY=/Users/mark/dev/ml/chat_history/ >> ~/.zshenv
 source ~/.zshenv
 ```
 
+### Sending messages to PubSub
+
+The example script below will save all messages to disk at the `MESSAGE_HISTORY` location; save message history to a Chroma database for QnA retrieval at `MESSAGE_HISTORY/chroma/.` (for adding context to prompts) and send messages to PubSub for use later on (say write to a BigQuery table, or trigger a Cloud Function to parse templates, etc. etc.)
+
+
+#### LLM generated description
+
+This code sets up an OpenAI chat model and uses it to generate responses to prompts. It imports several modules, including os, my_llm, and langchain. The code sets up an OpenAI API key and initializes a ChatOpenAI object with a temperature of 0.4. It also initializes a memory object with the namespace "debugger" and clears it. The code then generates a response to the prompt "How many ways are there to travel between the north pole and Copenhagen directly?" using the request_llm function from my_llm. It prints the response and generates a second response to a prompt that asks for a Danish translation of the first response. Finally, the code applies a summarization function to the memory object and prints the resulting summary. The memory object is then saved to a vector store.
+
+#### Code
+
+```python
+
+import os
+import my_llm.standards as my_llm
+import openai
+from langchain.chat_models import ChatOpenAI
+from my_llm.langchain_class import PubSubChatMessageHistory
+
+# swap out for any other LLM supported by LangChain
+openai.api_key = os.environ["OPENAI_API_KEY"]
+chat = ChatOpenAI(temperature=0.4)
+
+# has methods memory.add_user_message() and memory.add_ai_message() that are used to write to disk and pubsub
+memory = PubSubChatMessageHistory("debugger")
+
+# clears any messages from local disk
+memory.clear()
+
+# the animal is random to demonstrate it is used in the context search later
+prompt = "How many ways are there to travel between the north pole and Copenhagen directly? Also output a random animal with prefix: ANIMAL:"
+
+# Uses a langchain ConversationChain as per /my_llm/standards.py
+answer = my_llm.request_llm(prompt, chat, memory)
+
+print(answer)
+
+prompt2 = f"""
+Repeat the answer below but in Danish, or if you don't know just say 'munch munch' a lot:
+{answer}
+"""
+
+answer2 = my_llm.request_llm(prompt2, chat, memory)
+
+
+# creates a summary message of the messages stored so far
+summary = memory.apply_summarise_to_memory()
+
+print("Summary")
+print(summary)
+
+# this vectorstore is stored only locally (for now)
+memory.save_vectorstore_memory()
+
+# it searches over the vectorstore, and inserts context into the prompt before sending the answer to LLM
+answer3 = memory.question_memory("What random animal have you said?")
+print(answer3)
+```
 
 
 ## QnA over a directory
