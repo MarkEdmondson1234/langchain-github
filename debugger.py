@@ -14,28 +14,15 @@ chat = ChatOpenAI(temperature=0.4)
 
 memory = PubSubChatMessageHistory("debugger")
 memory.clear()
+# load chat-gpt history
+memory.load_chatgpt_export("/Users/mark/dev/ml/chatgpt_export/conversations.json")
 
-prompt = "How many ways are there to travel between the north pole and Copenhagen directly? Also output a random animal with prefix: ANIMAL:"
+summary = memory.apply_summarise_to_memory(n=10)
 
-answer = my_llm.request_llm(prompt, chat, memory)
-
-print(answer)
-
-prompt2 = f"""
-Repeat the answer below but in Danish, or if you don't know just say 'munch munch' a lot:
-{answer}
-"""
-
-answer2 = my_llm.request_llm(prompt2, chat, memory)
-
-#memory.print_messages()
-
-summary = memory.apply_summarise_to_memory()
-
-print("Summary")
+print("Summary last 10 messages")
 print(summary)
 
 memory.save_vectorstore_memory()
 
-answer3 = memory.question_memory("What random animal have you said?")
+answer3 = memory.question_memory("How is a TimedChatMessage defined?")
 print(answer3)

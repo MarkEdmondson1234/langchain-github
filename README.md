@@ -106,6 +106,58 @@ answer3 = memory.question_memory("What random animal have you said?")
 print(answer3)
 ```
 
+### Load Chat-GPT history from its export file
+
+In Chat-GPT you can export your chat history as a json file.  There is a parser to load this into a vectorstore and publish to PubSub.
+
+The below example imports the history of when I was creating these scripts - we can see it answers about context that was only obtained through chat history for this library, after the training cutoff date.
+
+```python
+import os
+import my_llm.standards as my_llm
+import openai
+from langchain.chat_models import ChatOpenAI
+from my_llm.langchain_class import PubSubChatMessageHistory
+
+# Set up OpenAI API
+openai.api_key = os.environ["OPENAI_API_KEY"]
+
+chat = ChatOpenAI(temperature=0.4)
+
+memory = PubSubChatMessageHistory("debugger")
+memory.clear()
+# load chat-gpt history
+memory.load_chatgpt_export("chatgpt_export/conversations.json")
+
+summary = memory.apply_summarise_to_memory(n=10)
+
+print("Summary last 10 messages")
+print(summary)
+
+memory.save_vectorstore_memory()
+
+answer3 = memory.question_memory("How is a TimedChatMessage defined?")
+print(answer3)
+```
+
+#### output:
+
+```
+Project ID: devo-mark-sandbox
+Cleared memory
+Loaded chatgpt_export/conversations.json into messages
+Summary last 10 messages
+
+The human asks the AI to adjust a task so messages are published to Google PubSub when they are written to disk. The AI is asked to make pubsub_topic an optional variable when the class is created. The human also inquires about the purpose of the "memory_namespace: str" line in the class and whether it is necessary to be there. The AI is asked to adjust the task so that if pubsub_topic is not passed, it will create the pubsub_topic from memory_namespace.
+
+Saving Chroma DB at /Users/mark/dev/ml/chat_history/debugger/chroma/ ...
+Using embedded DuckDB with persistence: data will be stored in: /Users/mark/dev/ml/chat_history/debugger/chroma/
+
+Loading Chroma DB from /Users/mark/dev/ml/chat_history/debugger/chroma/.
+Using embedded DuckDB with persistence: data will be stored in: /Users/mark/dev/ml/chat_history/debugger/chroma/
+ 
+ A TimedChatMessage is an object that contains a message and a role (e.g. "user") that is used in the BaseChatMessageHistory class and its subclasses.
+ ````
 
 ## QnA over a directory
 

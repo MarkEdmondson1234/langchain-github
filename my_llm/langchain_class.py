@@ -217,6 +217,7 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
             print("Memory namespace not set.")
     
     def apply_buffer_to_memory(self, 
+                               n = None,
                                max_token_limit: int =3000,
                                llm=OpenAI(),
                                memory_key: str ='history'):
@@ -228,11 +229,12 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
             return_messages=True)
 
         # Load messages from TimedChatMessageHistory into ConversationTokenBufferMemory
-        short_term_memory = self._switch_memory(short_term_memory)
+        short_term_memory = self._switch_memory(short_term_memory, n = n)
 
         return short_term_memory
     
     def apply_summarise_to_memory(self, 
+                                  n = None,
                                   max_token_limit: int =3000,
                                   llm=OpenAI()):
 
@@ -240,7 +242,7 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
             llm=llm, 
             max_token_limit=max_token_limit)
         
-        summary_memory = self._switch_memory(summary_memory)
+        summary_memory = self._switch_memory(summary_memory, n=n)
         
         messages = summary_memory.chat_memory.messages
         summary = summary_memory.predict_new_summary(messages, "")
@@ -248,8 +250,12 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
 
         return summary
     
-    def _switch_memory(self, memory):
+    def _switch_memory(self, memory, n = None):
+        i = 0
         for message in self.messages:
+            if n and i >= n:
+                break
+            i += 1
             #print(message.content)
             if message.role == "user":
                 memory.save_context({"input": message.content}, 
@@ -281,7 +287,7 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
 
         self.add_user_message(question)
 
-        qa_memory = self.apply_buffer_to_memory(llm=llm, memory_key="chat_history")
+        qa_memory = self.apply_buffer_to_memory(llm=llm, memory_key="chat_history", max_token_limit=2000)
 
         qa = ConversationalRetrievalChain.from_llm(
             llm, 
@@ -330,6 +336,48 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
                            })
             docs.append(doc)
         return docs
+    
+    def load_chatgpt_export(self, conversations_file: str):
+        if not os.path.isfile(conversations_file):
+            raise Exception(f"Could not find a file to load from {conversations_file}")
+
+        with open(conversations_file, "r") as f:
+            json_str = f.read()
+        
+        self._process_chatgpt_json(json_str)
+        
+        print(f"Loaded {conversations_file} into messages")
+
+        return True
+
+    def _process_chatgpt_json(self, json_str: str):
+        data = json.loads(json_str)
+        messages_data = []
+        for line in data:
+            message_data = [item["message"] for item in line["mapping"].values() if item["message"] is not None]
+            messages_data.append(message_data)
+        
+        timed_messages = []
+        for message_data in messages_data:
+            for message in message_data:
+                content = message["content"]["parts"][0]
+                role = message["author"]["role"]
+                timestamp = datetime.fromtimestamp(message["create_time"])
+                
+                timed_message = TimedChatMessage(content=content, role=role, timestamp=timestamp)
+                timed_messages.append(timed_message)
+                # write to disk
+                if self.memory_namespace:
+                    mem_path = self.get_mem_path()
+                    if mem_path:
+                        self._write_to_disk(mem_path, timed_message.dict())
+                # Publish to Google Pub/Sub
+                if self.publisher and self.pubsub_topic:
+                    self._publish_to_pubsub(timed_message.dict())
+
+                self.messages.append(timed_message)
+
+    
 
 
 
