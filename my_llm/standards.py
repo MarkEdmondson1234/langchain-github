@@ -13,7 +13,7 @@ from langchain.callbacks import get_openai_callback
 from langchain.vectorstores import Chroma
 from langchain.embeddings.openai import OpenAIEmbeddings
 
-from .langchain_class import TimedChatMessageHistory
+from .langchain_class import PubSubChatMessageHistory
 
 
 
@@ -21,7 +21,7 @@ from .langchain_class import TimedChatMessageHistory
 openai.api_key  = os.environ["OPENAI_API_KEY"]
 
 def init_memory(memory_namespace):
-    memory = TimedChatMessageHistory(memory_namespace)
+    memory = PubSubChatMessageHistory(memory_namespace)
     memory.load_chat_history()
     
     return memory

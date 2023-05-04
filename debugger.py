@@ -5,13 +5,14 @@ import os
 import my_llm.standards as my_llm
 import openai
 from langchain.chat_models import ChatOpenAI
+from my_llm.langchain_class import PubSubChatMessageHistory
 
 # Set up OpenAI API
 openai.api_key = os.environ["OPENAI_API_KEY"]
 
 chat = ChatOpenAI(temperature=0.4)
 
-memory = my_llm.init_memory("debugger")
+memory = PubSubChatMessageHistory("debugger")
 memory.clear()
 
 prompt = "How many ways are there to travel between the north pole and Copenhagen directly? Also output a random animal with prefix: ANIMAL:"
