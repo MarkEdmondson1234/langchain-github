@@ -113,10 +113,6 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
             json.dump(data, f, default=self._datetime_converter)
             f.write('\n')
 
-        # Publish to Google Pub/Sub
-        if self.publisher and self.pubsub_topic:
-            self._publish_to_pubsub(data)
-
     def _publish_to_pubsub(self, data):
         """Publishes the given data to Google Pub/Sub."""
         message_json = json.dumps(data, default=self._datetime_converter)
@@ -135,18 +131,41 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
 
     def add_user_message(self, message):
         timed_message = TimedChatMessage(content=message, role="user")
+        # write to disk
         if self.memory_namespace:
             mem_path = self.get_mem_path()
             if mem_path:
                 self._write_to_disk(mem_path, timed_message.dict())
+        # Publish to Google Pub/Sub
+        if self.publisher and self.pubsub_topic:
+            self._publish_to_pubsub(timed_message.dict())
+
         self.messages.append(timed_message)
 
     def add_ai_message(self, message):
         timed_message = TimedChatMessage(content=message, role="ai")
+        # write to disk
         if self.memory_namespace:
             mem_path = self.get_mem_path()
             if mem_path:
                 self._write_to_disk(mem_path, timed_message.dict())
+        # Publish to Google Pub/Sub
+        if self.publisher and self.pubsub_topic:
+            self._publish_to_pubsub(timed_message.dict())
+
+        self.messages.append(timed_message)
+
+    def add_system_message(self, message):
+        timed_message = TimedChatMessage(content=message, role="system")
+        # write to disk
+        if self.memory_namespace:
+            mem_path = self.get_mem_path()
+            if mem_path:
+                self._write_to_disk(mem_path, timed_message.dict())
+        # Publish to Google Pub/Sub
+        if self.publisher and self.pubsub_topic:
+            self._publish_to_pubsub(timed_message.dict())
+
         self.messages.append(timed_message)
     
     def clear(self):
