@@ -12,17 +12,16 @@ openai.api_key = os.environ["OPENAI_API_KEY"]
 
 chat = ChatOpenAI(temperature=0.4)
 
-memory = PubSubChatMessageHistory("debugger")
+memory = PubSubChatMessageHistory("debugger2")
 memory.clear()
-# load chat-gpt history
+memory.mess
+# # load chat-gpt history
 memory.load_chatgpt_export("/Users/mark/dev/ml/chatgpt_export/conversations.json")
 
 summary = memory.apply_summarise_to_memory(n=10)
 
-print("Summary last 20 messages")
-print(summary)
-
-temps = [0.1, 0.25, 0.5, 0.75, 1]
+# temps = [0.1, 0.25, 0.5, 0.75, 1]
+temps = [1]
 prompt = f"""
 Speculate what could happen next or what were the circumstances leading to the below.  
 Prefix your response with 'ELECTRIC SHEEP:'
@@ -32,5 +31,10 @@ for temp in temps:
     dream = ChatOpenAI(temperature=temp)
     my_llm.request_llm(prompt, dream, memory)
 
-memory.save_vectorstore_memory()
+
+# it searches over the vectorstore, and inserts context into the prompt before sending the answer to LLM
+result = memory.question_memory("What messages include ELECTRIC SHEEP?")
+print("## Answer: {}".format(result['result']))
+print('== Document sources:')
+print(result)
 

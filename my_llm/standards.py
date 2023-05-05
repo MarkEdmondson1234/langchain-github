@@ -66,7 +66,7 @@ def reset_totals():
     totals = _totals
     return(totals)
 
-def request_llm(prompt, chat, memory, verbose=False):
+def request_llm(prompt, chat, memory, verbose=False, metadata:dict =None):
     """
     Function to request code generation from the OpenAI API
     """
@@ -74,8 +74,13 @@ def request_llm(prompt, chat, memory, verbose=False):
     print(f"==    Requesting LLM {chat.model_name}  ")
     if verbose: 
         print(prompt)
+
+    if not metadata:
+        metadata={"task": "Chat"}
+    else:
+        metadata.setdefault("task", "Chat")
     
-    memory.add_user_message(prompt)
+    memory.add_user_message(prompt, metadata=metadata)
     
     short_term_memory=memory.apply_buffer_to_memory(max_token_limit=3000)
     
@@ -96,14 +101,14 @@ def request_llm(prompt, chat, memory, verbose=False):
     if verbose: 
         print(output)
     
-    memory.add_ai_message(output)
+    memory.add_ai_message(output, metadata=metadata)
     
     return output
 
 def request_code(prompt, chat, memory, verbose=False):
     memory.add_user_message("You are an expert AI to help create Python programs. You always enclose your code examples with three backticks (```)")
 
-    output = request_llm(prompt, chat, memory, verbose=verbose)
+    output = request_llm(prompt, chat, memory, verbose=verbose, metadata={"task": "request_code"})
     code = parse_code(output, memory)
 
     return(code)

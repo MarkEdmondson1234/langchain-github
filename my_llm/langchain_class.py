@@ -1,4 +1,4 @@
-import os, json
+import os, json, shutil
 
 from langchain.schema import ChatMessage, BaseChatMessageHistory
 from langchain.memory import ConversationTokenBufferMemory
@@ -6,7 +6,7 @@ from langchain.llms import OpenAI
 
 from langchain.memory import ConversationSummaryBufferMemory
 
-from langchain.chains import ConversationalRetrievalChain
+from langchain.chains import RetrievalQA
 
 from langchain.docstore.document import Document
 from langchain.text_splitter import CharacterTextSplitter
@@ -20,14 +20,16 @@ from google.cloud import pubsub_v1
 from google.auth import default
 from google.api_core.exceptions import NotFound
 
+from pydantic import Field
 
 class TimedChatMessage(ChatMessage):
-    timestamp: datetime = None
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    metadata: dict = Field(default_factory=dict)
 
-    def __init__(self, content, role, timestamp=None):
-        super().__init__(content=content, 
-                         role=role, 
-                         timestamp=timestamp or datetime.utcnow())
+    def __init__(self, content, role, timestamp=None, metadata=None, **kwargs):
+        kwargs['timestamp'] = timestamp or datetime.utcnow()
+        kwargs['metadata'] = metadata if metadata is not None else {}
+        super().__init__(content=content, role=role, **kwargs)
 
 
 class PubSubChatMessageHistory(BaseChatMessageHistory):
@@ -37,6 +39,7 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
         self.memory_namespace = memory_namespace
         self.messages = []
         self.mem_path = None
+        self.vector_db = None
 
         # Get the project ID from the default Google Cloud settings or the environment variable
         _, project_id = default()
@@ -66,7 +69,6 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
 
     def set_mem_path(self, path: str):
         self.mem_path = path
-
 
     def get_mem_path(self):
         if self.mem_path:
@@ -117,7 +119,8 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
         """Publishes the given data to Google Pub/Sub."""
         message_json = json.dumps(data, default=self._datetime_converter)
         message_bytes = message_json.encode('utf-8')
-        future = self.publisher.publish(self.pubsub_topic, message_bytes)
+        attr = {"namespace": self.memory_namespace}
+        future = self.publisher.publish(self.pubsub_topic, message_bytes, attrs=json.dumps(attr))
         future.add_done_callback(self._callback)
 
     @staticmethod
@@ -128,43 +131,41 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
         except Exception as e:
             print(f"Failed to publish message: {e}")
 
-
-    def add_user_message(self, message):
-        timed_message = TimedChatMessage(content=message, role="user")
+    def _route_message(self, timed_message):
         # write to disk
         if self.memory_namespace:
             mem_path = self.get_mem_path()
             if mem_path:
                 self._write_to_disk(mem_path, timed_message.dict())
+        
         # Publish to Google Pub/Sub
         if self.publisher and self.pubsub_topic:
             self._publish_to_pubsub(timed_message.dict())
+        
+        # save to vectorstore
+        metadata = timed_message.metadata if timed_message.metadata is not None else {}
+        metadata["role"] = timed_message.role
+        metadata["timestamp"] = str(timed_message.timestamp)
+        doc = Document(page_content=timed_message.content, metadata=metadata)
+
+        self.save_vectorstore_memory([doc])
+
+
+    def add_user_message(self, message, metadata: dict=None):
+        timed_message = TimedChatMessage(content=message, role="user", metadata=metadata)
+        self._route_message(timed_message)
 
         self.messages.append(timed_message)
 
-    def add_ai_message(self, message):
-        timed_message = TimedChatMessage(content=message, role="ai")
-        # write to disk
-        if self.memory_namespace:
-            mem_path = self.get_mem_path()
-            if mem_path:
-                self._write_to_disk(mem_path, timed_message.dict())
-        # Publish to Google Pub/Sub
-        if self.publisher and self.pubsub_topic:
-            self._publish_to_pubsub(timed_message.dict())
+    def add_ai_message(self, message, metadata: dict=None):
+        timed_message = TimedChatMessage(content=message, role="ai", metadata=metadata)
+        self._route_message(timed_message)
 
         self.messages.append(timed_message)
 
-    def add_system_message(self, message):
-        timed_message = TimedChatMessage(content=message, role="system")
-        # write to disk
-        if self.memory_namespace:
-            mem_path = self.get_mem_path()
-            if mem_path:
-                self._write_to_disk(mem_path, timed_message.dict())
-        # Publish to Google Pub/Sub
-        if self.publisher and self.pubsub_topic:
-            self._publish_to_pubsub(timed_message.dict())
+    def add_system_message(self, message, metadata:dict=None):
+        timed_message = TimedChatMessage(content=message, role="system", metadata=metadata)
+        self._route_message(timed_message)
 
         self.messages.append(timed_message)
     
@@ -176,6 +177,17 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
                     f.write("\n")
                 print("Cleared memory")
         self.messages = []
+        
+        # remove any vectorstore
+        dir_path = self.get_mem_vectorstore()
+
+        # Check if the Chroma database exists on disk
+        if os.path.isdir(dir_path):
+            try:
+                shutil.rmtree(dir_path)
+                print(f"Directory '{dir_path}' has been deleted.")
+            except OSError as e:
+                print(f"Error deleting directory '{dir_path}': {e}")
     
     def print_messages(self, n: int =None):
         if not self.messages:
@@ -200,9 +212,17 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
                     i += 1
                     message_data = json.loads(line)
                     message_data['timestamp'] = parse(message_data['timestamp'])
-                    message_data.pop('additional_kwargs', None)
-                    timed_message = TimedChatMessage(**message_data)
-                    self.messages.append(timed_message)
+                expected_keys = {'timestamp', 'user', 'message'}  # Add expected keys here
+                metadata = {k: v for k, v in message_data.items() if k not in expected_keys}
+                if metadata:
+                    message_data['metadata'] = metadata
+
+                # Remove unexpected keys from message_data before passing to TimedChatMessage
+                for key in metadata:
+                    message_data.pop(key, None)
+
+                timed_message = TimedChatMessage(**message_data)
+                self.messages.append(timed_message)
         print('Loaded')
 
     def load_chat_history(self, n: int =None):
@@ -245,8 +265,10 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
         summary_memory = self._switch_memory(summary_memory, n=n)
         
         messages = summary_memory.chat_memory.messages
+        
         summary = summary_memory.predict_new_summary(messages, "")
-        self.add_ai_message(summary)
+
+        self.add_ai_message(summary, metadata={"task": "summary"})
 
         return summary
     
@@ -266,14 +288,7 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
         
         return memory
     
-    def load_vectorstore_memory(self, embedding=OpenAIEmbeddings()):
-        db_path = self.get_mem_vectorstore()
 
-        print(f'Loading Chroma DB from {db_path}.')
-        vector_db = Chroma(persist_directory=db_path, 
-                           embedding_function=embedding)
-
-        return vector_db
 
     @staticmethod
     def _get_chat_history(inputs) -> str:
@@ -285,41 +300,89 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
     def question_memory(self, question: str, llm=OpenAI(temperature=0)):
         db = self.load_vectorstore_memory()
 
-        self.add_user_message(question)
+        docs = db.similarity_search(question)
+        if len(docs) == 0:
+            print("No documents found similar to your question")
+            return None
 
-        qa_memory = self.apply_buffer_to_memory(llm=llm, memory_key="chat_history", max_token_limit=2000)
-
-        qa = ConversationalRetrievalChain.from_llm(
-            llm, 
-            db.as_retriever(), 
-            get_chat_history=self._get_chat_history,
-            memory=qa_memory)
+        # Load a QA chain
+        qa = RetrievalQA.from_chain_type(
+            llm=llm, 
+            chain_type="stuff",
+            retriever=db.as_retriever(), 
+            return_source_documents=True)
         
-        result = qa({"question": question})
-        answer = result["answer"]
-        self.add_ai_message(answer)
+        self.add_user_message(question, metadata={"task": "QnA"})
+        
+        result = qa({"query": question})
+        answer = result["result"]
+        metadata={"task": "QnA"}
 
-        return answer
+        if result.get('source_documents') is not None:
+            source_metadata = []
+            for doc in result.get('source_documents'):
+                p = {"page_content": doc.page_content, 
+                     "page_metadata": doc.metadata}
+                source_metadata.append(p)
+
+            metadata = {"task": "QnA", "sources":json.dumps(source_metadata)}
+
+        self.add_ai_message(answer, metadata=metadata)
+
+        return result
     
-    def save_vectorstore_memory(self, embedding=OpenAIEmbeddings()):
+    def create_vectorstore_memory(self, embedding=OpenAIEmbeddings()):
         db_path = self.get_mem_vectorstore()
-        print(f'Saving Chroma DB at {db_path} ...')
+        print(f'Creating Chroma DB at {db_path} ...')
         source_chunks = self._get_source_chunks()
         vector_db = Chroma.from_documents(source_chunks, 
                                           embedding, 
                                           persist_directory=db_path)
+        self.vector_db = vector_db
         vector_db.persist()
 
         return vector_db
+    
+    def save_vectorstore_memory(self, documents=None):
 
-    def _get_source_chunks(self):
+        if self.vector_db is None:
+            vector_db = self.load_vectorstore_memory()
+        else:
+            vector_db = self.vector_db
+
+        source_chunks = self._get_source_chunks(documents)
+        ids = vector_db.add_documents(source_chunks)
+
+        print(f'Saved documents to vector store')
+
+        return ids
+
+    def load_vectorstore_memory(self, embedding=OpenAIEmbeddings()):
+        db_path = self.get_mem_vectorstore()
+
+        # Check if the Chroma database exists on disk
+        if not os.path.exists(db_path):
+            # If it doesn't exist, create and persist the database
+            vector_db = self.create_vectorstore_memory()
+        else:
+            # If it exists, load the database from disk
+            print(f"Loading existing vectorstore database from {db_path}")
+            vector_db = Chroma(persist_directory=db_path, embedding_function=embedding)
+
+        self.vector_db = vector_db
+
+        return vector_db
+
+    def _get_source_chunks(self, documents=None):
         source_chunks = []
 
+        if documents is None:
+            documents = self._get_memory_documents()
         # Create a CharacterTextSplitter object for splitting the text
         splitter = CharacterTextSplitter(separator=" ", 
-                                         chunk_size=1024, 
+                                         chunk_size=2048, 
                                          chunk_overlap=0)
-        for source in self._get_memory_documents():
+        for source in documents:
             for chunk in splitter.split_text(source.page_content):
                 source_chunks.append(Document(page_content=chunk, 
                                               metadata=source.metadata))
@@ -337,6 +400,7 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
             docs.append(doc)
         return docs
     
+    
     def load_chatgpt_export(self, conversations_file: str):
         if not os.path.isfile(conversations_file):
             raise Exception(f"Could not find a file to load from {conversations_file}")
@@ -344,11 +408,11 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
         with open(conversations_file, "r") as f:
             json_str = f.read()
         
-        self._process_chatgpt_json(json_str)
+        chatgpt_messages = self._process_chatgpt_json(json_str)
         
         print(f"Loaded {conversations_file} into messages")
 
-        return True
+        return chatgpt_messages
 
     def _process_chatgpt_json(self, json_str: str):
         data = json.loads(json_str)
@@ -364,7 +428,10 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
                 role = message["author"]["role"]
                 timestamp = datetime.fromtimestamp(message["create_time"])
                 
-                timed_message = TimedChatMessage(content=content, role=role, timestamp=timestamp)
+                timed_message = TimedChatMessage(content=content, 
+                                                 role=role, 
+                                                 timestamp=timestamp, 
+                                                 metadata={"task": "ChatGPT"})
                 timed_messages.append(timed_message)
                 # write to disk
                 if self.memory_namespace:
@@ -376,6 +443,8 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
                     self._publish_to_pubsub(timed_message.dict())
 
                 self.messages.append(timed_message)
+        
+        return timed_messages
 
     
 
