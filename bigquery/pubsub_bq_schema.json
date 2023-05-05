@@ -1,0 +1,33 @@
+[
+    {
+      "description":"The pubsub subscription name",
+      "mode": "NULLABLE",
+      "name":"subscription_name",
+      "type":"STRING"
+    },
+    {
+      "description":"The pubsub message_id used for deduplication",
+      "mode": "NULLABLE",
+      "name":"message_id",
+      "type":"STRING"
+    },
+    {
+      "description":"When the PubSub topic was published",
+      "mode": "NULLABLE",
+      "name":"publish_time",
+      "type":"TIMESTAMP"
+    },
+    {
+      "description":"The data pushed to the PubSub topic",
+      "mode": "NULLABLE",
+      "name":"data",
+      "type":"STRING"
+    },
+    {
+      "description":"Optional attributes added to the PubSub topic",
+      "mode": "NULLABLE",
+      "name":"attributes",
+      "type":"STRING"
+    }
+  ]
+  

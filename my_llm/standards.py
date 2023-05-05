@@ -93,6 +93,9 @@ def request_llm(prompt, chat, memory, verbose=False):
         totals["total_cost"] += cb.total_cost
         print(f"Usage: {totals}")
     
+    if verbose: 
+        print(output)
+    
     memory.add_ai_message(output)
     
     return output

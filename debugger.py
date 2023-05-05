@@ -19,10 +19,18 @@ memory.load_chatgpt_export("/Users/mark/dev/ml/chatgpt_export/conversations.json
 
 summary = memory.apply_summarise_to_memory(n=10)
 
-print("Summary last 10 messages")
+print("Summary last 20 messages")
 print(summary)
+
+temps = [0.1, 0.25, 0.5, 0.75, 1]
+prompt = f"""
+Speculate what could happen next or what were the circumstances leading to the below.  
+Prefix your response with 'ELECTRIC SHEEP:'
+{summary}
+"""
+for temp in temps:
+    dream = ChatOpenAI(temperature=temp)
+    my_llm.request_llm(prompt, dream, memory)
 
 memory.save_vectorstore_memory()
 
-answer3 = memory.question_memory("How is a TimedChatMessage defined?")
-print(answer3)
