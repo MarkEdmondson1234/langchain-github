@@ -8,7 +8,7 @@ There are currently three applications:
 
 All the other applications use the above `PubSubChatMessageHistory` class as applications, and send in their respective messages to their own PubSub topics.  I then aggregate those into one BigQuery materialised table.
 
-* Create Python code from a prompt and a python test file.  This is used to try and prevent hallicinations making unusable code in when requesting it from LLMs.  As LLMs improve, this should become more and more reliable.  There is also an option to create the test file via LLMs, but with human intervention to check its ok before running the rest of the script. See its [README](code_generation/README.md)
+* Create Python code from a prompt and a python test file.  This is used to try and prevent hallicinations making unusable code when requesting it from LLMs.  As LLMs improve, this should become more and more reliable.  There is also an option to create the test file via LLMs, but with human intervention to check its ok before running the rest of the script. See its [README](code_generation/README.md)
 ```
 python code_generation/create_script.py --help
 usage: create_script.py [-h] prompt test_file output_file
@@ -214,8 +214,6 @@ summary = memory.apply_summarise_to_memory(n=10)
 print("Summary last 10 messages")
 print(summary)
 
-memory.save_vectorstore_memory()
-
 answer3 = memory.question_memory("How is a TimedChatMessage defined?")
 print(answer3)
 ```
@@ -229,9 +227,6 @@ Loaded chatgpt_export/conversations.json into messages
 Summary last 10 messages
 
 The human asks the AI to adjust a task so messages are published to Google PubSub when they are written to disk. The AI is asked to make pubsub_topic an optional variable when the class is created. The human also inquires about the purpose of the "memory_namespace: str" line in the class and whether it is necessary to be there. The AI is asked to adjust the task so that if pubsub_topic is not passed, it will create the pubsub_topic from memory_namespace.
-
-Saving Chroma DB at /Users/mark/dev/ml/chat_history/debugger/chroma/ ...
-Using embedded DuckDB with persistence: data will be stored in: /Users/mark/dev/ml/chat_history/debugger/chroma/
  
  A TimedChatMessage is an object that contains a message and a role (e.g. "user") that is used in the BaseChatMessageHistory class and its subclasses.
  ````
