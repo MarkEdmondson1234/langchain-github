@@ -8,7 +8,7 @@ There are currently three applications:
 
 All the other applications use the above `PubSubChatMessageHistory` class as applications, and send in their respective messages to their own PubSub topics.  I then aggregate those into one BigQuery materialised table.
 
-* Create Python code from a prompt and a python test file.  This is used to try and prevent hallicinations making unusable code when requesting it from LLMs.  As LLMs improve, this should become more and more reliable.  There is also an option to create the test file via LLMs, but with human intervention to check its ok before running the rest of the script. See its [README](code_generation/README.md)
+* Create Python code from a prompt and a python test file.  This is used to try and prevent hallucinations making unusable code when requesting it from LLMs.  As LLMs improve, this should become more and more reliable.  There is also an option to create the test file via LLMs, but with human intervention to check its ok before running the rest of the script. See its [README](code_generation/README.md)
 ```
 python code_generation/create_script.py --help
 usage: create_script.py [-h] prompt test_file output_file
@@ -69,6 +69,7 @@ All requests and responses are written in a manner they can be used downstream f
 This opens up many use cases, initial thoughts on top ones are:
 * An organization could have all usage of LLMs sent to one BigQuery database that accepts all LLM PubSub stream output. This could serve as an ever expanding searchable "company brain" that can be used to further tailor the LLM responses.  Message content can be used in answers themselves, for instance documents and knowledge locked up in domain experts could be inputted via a familiar UX such as Slack, Discord, GChat or a web based application.
 *  Triggers can be configured by downstream GCP services that react to PubSub.  For instance, a Cloud Function can watch for LLM content that include a templated response e.g. if a LLM response includes a template: SQL: {the_sql} then it could run that query in Bigquery and email the results back to the user; if an LLM response includes a template keyword EMAIL: {email_content} then it could send an email etc. etc. 
+* Set up scheduled summaries of LLM message content, and ask the LLM to speculate on the circumstances around the messages being sent and to what may happen next, then adding those to the message history labelled as dreams.
 
 Messages are also stored into a vector database, so that they can be searched over to provide context to the LLM, which improves its responses for data that is not within its training set. At the moment this is a local version via Chroma, but it can be scaled up to use [Google Mathcing Engine](https://cloud.google.com/vertex-ai/docs/matching-engine/overview), that Langchain has recently integrated with ( https://github.com/hwchase17/langchain/pull/3104 )
 
