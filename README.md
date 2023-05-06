@@ -166,7 +166,6 @@ This utility imports files from a directory into a Chroma vector store, which is
 Configure location for vector store and make it executable:
 
 ```
-echo 'export CHROMA_DB_PATH=/Users/mark/dev/ml/chroma/' >> ~/.zshenv
 echo 'export CHROMA_DB_PATH=/Users/mark/dev/ml/chat_history/' >> ~/.zshenv
 source ~/.zshenv
 chmod u+x qna/read_repo.py

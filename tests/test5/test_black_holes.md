@@ -1,1 +1,5 @@
-This code defines a test case using the Python unittest module to test the "compute_evaporation_time" function from a separate module called "black_holes". The test case includes a single test that checks if the function correctly calculates the evaporation time for a black hole with the same mass as the Earth. The expected result is provided as a constant, and the "assertAlmostEqual" method is used to compare the actual result from the function to the expected result with a tolerance of 7 decimal places. The code also includes a main block that runs the test case using the "unittest.main()" method. An example usage of the code would be to add more test cases to the "TestBlackHoles" class to check other mass values.
+# heading
+This code defines a unit test for a Python script that calculates the evaporation time of a black hole with a given mass due to Hawking radiation. The 'TestBlackHoles' class contains a single test function, 'test_earth_mass', which initializes the mass of a black hole with the same mass as the Earth and checks that the evaporation time calculated by the 'compute_evaporation_time' function from the 'black_holes' module is equal to the expected value. The 'if __name__ == '__main__'' block runs the unit test when the script is executed.
+
+"""
+"""

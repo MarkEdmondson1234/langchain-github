@@ -1,1 +1,5 @@
-This code is a Python unit test that checks if the function "how_many_days" correctly calculates the number of days since a given birth date. The birth date is hardcoded as June 23, 1912. The function takes a date as input and calculates the number of days between that date and the birth date using the "days" attribute of the timedelta object returned by subtracting the birth date from the input date. The test checks if the number of days is greater than 0 for a few test dates. The code uses the Python unittest module to define and run the test. An example usage of the code would be to import the function "how_many_days" into another Python script and use it to calculate the number of days since a given birth date.
+# heading
+This code defines a unit test for a Python script that calculates the number of days between a birth date and a list of test dates. The 'TestHowManyDays' class contains a single test function, 'test_how_many_days', which initializes a birth date and a list of test dates, and checks that the number of days between each test date and the birth date is greater than 0. The 'if __name__ == '__main__'' block runs the unit test when the script is executed.
+
+"""
+"""

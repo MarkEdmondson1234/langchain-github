@@ -14,7 +14,7 @@ chat = ChatOpenAI(temperature=0.4)
 
 memory = PubSubChatMessageHistory("debugger2")
 memory.clear()
-memory.mess
+
 # # load chat-gpt history
 memory.load_chatgpt_export("/Users/mark/dev/ml/chatgpt_export/conversations.json")
 

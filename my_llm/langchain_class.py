@@ -312,8 +312,6 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
             retriever=db.as_retriever(), 
             return_source_documents=True)
         
-        self.add_user_message(question, metadata={"task": "QnA"})
-        
         result = qa({"query": question})
         answer = result["result"]
         metadata={"task": "QnA"}
@@ -327,13 +325,22 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
 
             metadata = {"task": "QnA", "sources":json.dumps(source_metadata)}
 
+        self.add_user_message(question, metadata={"task": "QnA"})
         self.add_ai_message(answer, metadata=metadata)
 
         return result
     
     def create_vectorstore_memory(self, embedding=OpenAIEmbeddings()):
         db_path = self.get_mem_vectorstore()
-        print(f'Creating Chroma DB at {db_path} ...')
+        what_we_are_doing = f'Creating Chroma DB at {db_path} ...'
+        print(what_we_are_doing)
+
+        # we need a message to init the db
+        init_message = TimedChatMessage(content=what_we_are_doing, 
+                                        role="system", 
+                                        metadata={'task': 'chromadb_init'})
+        self.messages.append(init_message)
+
         source_chunks = self._get_source_chunks()
         vector_db = Chroma.from_documents(source_chunks, 
                                           embedding, 
@@ -345,19 +352,22 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
     
     def save_vectorstore_memory(self, documents=None):
 
-        if self.vector_db is None:
-            vector_db = self.load_vectorstore_memory()
-        else:
-            vector_db = self.vector_db
+        vector_db = self.load_vectorstore_memory()
 
         source_chunks = self._get_source_chunks(documents)
         ids = vector_db.add_documents(source_chunks)
 
-        print(f'Saved documents to vector store')
+        print(f'Saved {len(ids)} documents to vectorstore')
+        for chunk in source_chunks:
+            print(chunk.metadata)
 
         return ids
 
     def load_vectorstore_memory(self, embedding=OpenAIEmbeddings()):
+
+        if self.vector_db is not None:
+            return self.vector_db
+        
         db_path = self.get_mem_vectorstore()
 
         # Check if the Chroma database exists on disk

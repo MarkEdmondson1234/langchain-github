@@ -41,11 +41,14 @@ def parse_code(code, memory=None):
     else:
         if memory:
             memory.add_user_message("You MUST always enclose your code examples with three backticks (```)")
-        
-    print("==AI FEEDBACK==")
-    print(text)
     
-    return code + '\n\n"""\n' + text + '"""\n'
+    output = code
+    if text != "":
+        print("==AI FEEDBACK==")
+        print(text)
+        output = output + '\n\n"""\n' + text + '"""\n'
+    
+    return output
 
 totals = {
         "total_tokens": 0,

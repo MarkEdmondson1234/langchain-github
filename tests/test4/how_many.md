@@ -1,1 +1,5 @@
-This code calculates the number of days since Alan Turing's birth date (June 23, 1912) for a few test dates using the datetime module in Python. The birth date is stored as a datetime object and the test dates are stored in a list of datetime objects. The code then loops through the test dates and calculates the number of days between each test date and the birth date using the "days" attribute of the timedelta object returned by subtracting the birth date from the test date. The code then prints the number of days since Alan Turing's birth for each test date. An example usage of the code would be to modify the birth date and test dates to calculate the number of days since a different birth date for a different set of test dates.
+# heading
+This code calculates the number of days between Alan Turing's birth date (June 23, 1912) and a list of test dates. The code initializes a birth date and a list of test dates, and uses a for loop to iterate over the test dates and calculate the number of days between each test date and the birth date. The number of days is printed to the console in a formatted string.
+
+"""
+"""
