@@ -13,3 +13,4 @@ FROM
   langchain.pubsub_staging
 WHERE
   content LIKE '%keyword%';
+# https://console.cloud.google.com/bigquery?sq=555344851243:829a80edb74a48bcb221b30635ca8c7a
