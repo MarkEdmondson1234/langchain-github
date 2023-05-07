@@ -244,3 +244,50 @@ What do you know about GenerativeAgent?
 
 The code defines the `GenerativeAgent` class, which is a generative agent for a language model or chatbot. This class has methods for generating responses to user prompts based on its memory and the prompt itself. The inputs and outputs for each method are described in the code.
 ````
+
+If you launch with `--verbose` then you can see the sources where it derived the answer from:
+
+````
+% read_repo $PWD --verbose
+Project ID: devo-mark-sandbox
+
+Ask a question. CTRL + C to quit.
+If I don't know, feel free to tell me so I can learn and answer more accurately next time with your reply
+What do you know about GenerativeAgent?
+
+Loading existing vectorstore database from /Users/mark/dev/ml/chat_history/qna_documents/chroma/
+Using embedded DuckDB with persistence: data will be stored in: /Users/mark/dev/ml/chat_history/qna_documents/chroma/
+Saved 1 documents to vectorstore:
+What do you know about Generat...
+{'task': 'QnA', 'role': 'user', 'timestamp': '2023-05-07 20:38:09.296257'}
+Saved 1 documents to vectorstore:
+The code defines the `Generati...
+{'task': 'QnA', 'sources': '[{"page_c ...'}
+
+== Document sources:
+-- Source 1
+ - page_content:
+ What do you know about GenerativeAgent?
+ - metadata: 
+{'task': 'QnA', 'role': 'user', 'timestamp': '2023-05-07 18:44:55.165206'}
+-- Source 2
+ - page_content:
+ The code defines the `GenerativeAgent` class, which is a generative agent for a language model or chatbot. This class has methods for generating responses to user prompts based on its memory and the prompt itself. The inputs and outputs for each method are described in the code.
+ - metadata: 
+{'task': 'QnA', 'sour...'}
+-- Source 3
+ - page_content:
+ This code defines the `GenerativeAgentMemory` class, which is a memory module for a language model or chatbot. The class has methods for generating "insights" based on recent observations, as well as a `pause_to_reflect` method that triggers reflection on recent observations and generates insights. The code imports various modules and classes from the `langchain` package, including `BaseMemory`, `BaseLanguageModel`, `PromptTemplate`, `TimeWeightedVectorStoreRetriever`, and `Document`. It also imports the `logging` module.
+ - metadata: 
+{'task': 'Chat', 'role': 'ai', 'timestamp': '2023-05-07 11:00:07.602482'}
+-- Source 4
+ - page_content:
+ This code defines a variety of classes and functions related to language model agents, including tools for creating different types of agents, loading agents from configuration dictionaries or files, and initializing agent executors. The code also defines several classes of conversational agents, including ReActTextWorldAgent and StructuredChatAgent. The inputs and outputs for each function and class are described in the code.
+ - metadata: 
+{'task': 'Chat', 'role': 'ai', 'timestamp': '2023-05-07 13:06:20.149935'}
+
+================================
+== Answer:
+
+The code defines the `GenerativeAgent` class, which is a generative agent for a language model or chatbot. This class has methods for generating responses to user prompts based on its memory and the prompt itself. The inputs and outputs for each method are described in the code. The code also defines the `GenerativeAgentMemory` class, which is a memory module for a language model or chatbot. The class has methods for generating "insights" based on recent observations, as well as a `pause_to_reflect` method that triggers reflection on recent observations and generates insights.
+````
