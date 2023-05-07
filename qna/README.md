@@ -229,47 +229,18 @@ Once done, you can just do a QnA over the summaries and code via:
 read_repo $PWD
 ```
 
+Example with the question "What do you know about GenerativeAgent?" which the ChatGPT internface does not know about. 
 ````
 >% read_repo $PWD
 Project ID: devo-mark-sandbox
 
 Ask a question. CTRL + C to quit.
 If I don't know, feel free to tell me so I can learn and answer more accurately next time with your reply
-How do you use Pinecone as a vectorstore?
-
-Loading existing vectorstore database from /Users/mark/dev/ml/chat_history/qna_documents/chroma/
-Using embedded DuckDB with persistence: data will be stored in: /Users/mark/dev/ml/chat_history/qna_documents/chroma/
-
-================================
-== Answer:
-
-To use Pinecone as a vectorstore, you first need to create an account on their website and obtain an API key. Then, you can use Pinecone's SDKs to connect to the Pinecone service and start indexing and querying your vectors. You can upload your embeddings to Pinecone and add them to the index using the SDKs. Once your vectors are indexed, you can search for nearest neighbors or perform other similarity searches. Pinecone also provides various features like data versioning, scaling, and monitoring to help manage your vector data.
-
-
-Ask a question. CTRL + C to quit.
-If I don't know, feel free to tell me so I can learn and answer more accurately next time with your reply
-How do you add documents to a Pinecome database?
+What do you know about GenerativeAgent?
 
 
 ================================
 == Answer:
 
-You can add documents to a Pinecone database using the `add_texts` method provided by the `Pinecone` class. This method takes a list of documents as input and returns a list of ids. Here's an example code snippet that shows how to add documents to a Pinecone database using the `add_texts` method:
-
-```
-from pinecone import Pinecone
-
-# Initialize Pinecone client
-pinecone = Pinecone(api_key="YOUR_API_KEY", index_name="YOUR_INDEX_NAME")
-
-# Add documents to the database
-documents = ["This is the first document.", "This is the second document."]
-ids = pinecone.add_texts(texts=documents)
-
-print(ids)
-```
-
-In this example, `YOUR_API_KEY` is your Pinecone API key and `YOUR_INDEX_NAME` is the name of the index you want to add documents to. The `add_texts` method takes a list of documents (`documents`) as input and returns a list of ids (`ids`) that correspond to the added documents.
-
+The code defines the `GenerativeAgent` class, which is a generative agent for a language model or chatbot. This class has methods for generating responses to user prompts based on its memory and the prompt itself. The inputs and outputs for each method are described in the code.
 ````
-
