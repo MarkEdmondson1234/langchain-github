@@ -22,6 +22,7 @@ parser.add_argument("--reindex", action="store_true", help="Whether to re-index 
 parser.add_argument("--ext", help="Comma separated list of file extensions to include. Defaults to '.md,.py'")
 parser.add_argument("--ignore", help="Directory to ignore file imports from. Defaults to 'env/'")
 parser.add_argument("--resummarise", action="store_true", help="Recreate the code.md files describing the code")
+parser.add_argument("--verbose", action="store_true", help="Include metadata such as sources in replies")
 args = parser.parse_args()
 config = vars(args)
 
@@ -43,18 +44,26 @@ def get_repo_docs(repo_path, extension, memory):
     
     exts = extension.split(",")
     for ext in exts:
+        the_glob = f"**/*{ext}"
+        matched_files = list(repo.glob(the_glob))
+        num_matched_files = len(matched_files)
+        print(f"Number of matched {ext} files: {num_matched_files}")
+
         # Generate summary md files
         if ext!=".md":
-            for non_md_file in repo.glob(f"**/*{ext}"):
+            k = 0
+            for non_md_file in repo.glob(the_glob):
+                k += 1
                 if str(non_md_file).startswith(str(ignore_path)):
                       continue
                 generate_code_summary(non_md_file, memory)
+                print(f"Generated summary for a {ext} file: {k} of {num_matched_files} done.")
                               
 		# Iterate over all files in the repo (including subdirectories)
         print(f"Reading {ext} files")
         i = 0
         j = 0
-        for md_file in repo.glob(f"**/*{ext}"):
+        for md_file in repo.glob(the_glob):
 
             if str(md_file).startswith(str(ignore_path)):
                 j += 1
@@ -68,6 +77,8 @@ def get_repo_docs(repo_path, extension, memory):
                     yield Document(page_content=file.read(), metadata={"source": str(rel_path)})
             except Exception as e:
                 print(f"Error reading {md_file}: " + str(e))
+            
+            print(f"Read {i} files so far and ignored {j}: total: {num_matched_files}")
         
         print(f"Read {i} and ignored {j} {ext} files.")
         
@@ -171,9 +182,9 @@ def main():
         print ("If I don't know, feel free to tell me so I can learn and answer more accurately next time with your reply"  + '\033[m')
         user_input = input()
         print('\033[31m')
-        answer = memory.question_memory(user_input, llm=chat)
+        answer = memory.question_memory(user_input, llm=chat, verbose=config['verbose'])
         if answer is not None:
-            if answer.get('source_documents') is not None:
+            if answer.get('source_documents') is not None and config['verbose']:
                 print('\n== Document sources:')
                 i = 0
                 for doc in answer.get('source_documents'):
@@ -181,6 +192,7 @@ def main():
                     print(f'-- Source {i}')
                     print(f' - page_content:\n {doc.page_content}')
                     print(f' - metadata: \n{doc.metadata}')
+
             print('\n================================')
             print('== Answer:\n\n' + answer['result'])
 

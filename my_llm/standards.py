@@ -38,9 +38,6 @@ def parse_code(code, memory=None):
             text = match.group(1)
         if match and match.group(4) is not None:
             text = text + match.group(4)
-    else:
-        if memory:
-            memory.add_user_message("You MUST always enclose your code examples with three backticks (```)")
     
     output = code
     if text != "":

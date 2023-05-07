@@ -44,6 +44,11 @@ optional arguments:
   --resummarise    Recreate the code.md files describing the code (default: False)
 ```
 
+Some examples on how the LLM output ends in PubSub from indexing the langchain repository (https://github.com/hwchase17/langchain) can be seen below:
+
+![](img/langchain_index_langchain_pubsub.png)
+
+![](img/langchain_index_langchain_bigquery.png)
 
 ## global setup
 

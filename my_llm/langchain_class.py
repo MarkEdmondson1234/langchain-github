@@ -119,7 +119,7 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
         """Publishes the given data to Google Pub/Sub."""
         message_json = json.dumps(data, default=self._datetime_converter)
         message_bytes = message_json.encode('utf-8')
-        attr = {"namespace": self.memory_namespace}
+        attr = {"namespace": str(self.memory_namespace)}
         future = self.publisher.publish(self.pubsub_topic, message_bytes, attrs=json.dumps(attr))
         future.add_done_callback(self._callback)
 
@@ -131,7 +131,7 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
         except Exception as e:
             print(f"Failed to publish message: {e}")
 
-    def _route_message(self, timed_message):
+    def _route_message(self, timed_message, verbose=False):
         # write to disk
         if self.memory_namespace:
             mem_path = self.get_mem_path()
@@ -148,24 +148,24 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
         metadata["timestamp"] = str(timed_message.timestamp)
         doc = Document(page_content=timed_message.content, metadata=metadata)
 
-        self.save_vectorstore_memory([doc])
+        self.save_vectorstore_memory([doc], verbose=verbose)
 
 
-    def add_user_message(self, message, metadata: dict=None):
+    def add_user_message(self, message, metadata: dict=None, verbose=False):
         timed_message = TimedChatMessage(content=message, role="user", metadata=metadata)
-        self._route_message(timed_message)
+        self._route_message(timed_message, verbose=verbose)
 
         self.messages.append(timed_message)
 
-    def add_ai_message(self, message, metadata: dict=None):
+    def add_ai_message(self, message, metadata: dict=None, verbose=False):
         timed_message = TimedChatMessage(content=message, role="ai", metadata=metadata)
-        self._route_message(timed_message)
+        self._route_message(timed_message, verbose=verbose)
 
         self.messages.append(timed_message)
 
-    def add_system_message(self, message, metadata:dict=None):
+    def add_system_message(self, message, metadata:dict=None, verbose=False):
         timed_message = TimedChatMessage(content=message, role="system", metadata=metadata)
-        self._route_message(timed_message)
+        self._route_message(timed_message, verbose=verbose)
 
         self.messages.append(timed_message)
     
@@ -297,7 +297,7 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
             res.append(f"Human:{human}\nAI:{ai}")
         return "\n".join(res)
     
-    def question_memory(self, question: str, llm=OpenAI(temperature=0)):
+    def question_memory(self, question: str, llm=OpenAI(temperature=0), verbose=False):
         db = self.load_vectorstore_memory()
 
         docs = db.similarity_search(question)
@@ -325,8 +325,8 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
 
             metadata = {"task": "QnA", "sources":json.dumps(source_metadata)}
 
-        self.add_user_message(question, metadata={"task": "QnA"})
-        self.add_ai_message(answer, metadata=metadata)
+        self.add_user_message(question, metadata={"task": "QnA"}, verbose=verbose)
+        self.add_ai_message(answer, metadata=metadata, verbose=verbose)
 
         return result
     
@@ -350,16 +350,18 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
 
         return vector_db
     
-    def save_vectorstore_memory(self, documents=None):
+    def save_vectorstore_memory(self, documents=None, verbose=False):
 
         vector_db = self.load_vectorstore_memory()
 
         source_chunks = self._get_source_chunks(documents)
         ids = vector_db.add_documents(source_chunks)
 
-        print(f'Saved {len(ids)} documents to vectorstore')
-        for chunk in source_chunks:
-            print(chunk.metadata)
+        if verbose:
+            print(f'Saved {len(ids)} documents to vectorstore:')
+            for chunk in source_chunks:
+                print(chunk.page_content[:30].strip() + "...")
+                print(chunk.metadata)
 
         return ids
 
