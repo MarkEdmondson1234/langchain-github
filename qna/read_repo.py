@@ -74,7 +74,9 @@ def get_repo_docs(repo_path, extension, memory):
             try:
                 with open (md_file, "r") as file:
                     rel_path = md_file.relative_to(repo)
-                    yield Document(page_content=file.read(), metadata={"source": str(rel_path)})
+                    metadata = {"source": str(rel_path)}
+                    #print(metadata)
+                    yield Document(page_content=file.read(), metadata=metadata)
             except Exception as e:
                 print(f"Error reading {md_file}: " + str(e))
             
@@ -110,17 +112,23 @@ def generate_code_summary(a_file, memory):
 
     # create prompt to pass in to LLM
     template = """
-Summarise what the code does below.  Use Markdown in your output. 
-Use this template:
-# title of the script
+Summarise what the code does below.  Use Markdown in your output with the following template:
+
+# a title
 summary of script purpose
-## functions
-How the functions relate to each other
 
-# Inputs and outputs for each function
-Description of each function's inputs and outputs
+## keywords
+Comma seperated list of 3-4 keywords suitable for this code
 
-The code to summarise is below:
+## classes
+A description of each class
+
+## functions/methods
+How the functions or methods of a class work including listing the Inputs and outputs for each function
+
+## code examples of use
+
+The code to summarise is here:
 {code}
 """
 
@@ -138,14 +146,7 @@ The code to summarise is below:
             memory,
             metadata={'task':'summarise_code'})
     
-        result = my_llm.parse_code(summary, memory)
-        if result is not None:
-            response = result
-        else:
-            print("Got no code to parse")
-            response = summary
-    
-        my_llm.save_to_file(new_file_name, response + '\n\n', type = "a")
+        my_llm.save_to_file(new_file_name, summary + '\n\n', type = "a")
     
     return
     
@@ -178,20 +179,21 @@ def main():
         memory.save_vectorstore_memory(source_chunks)
 	
     while True:
-        print('\n\033[31m' + 'Ask a question. CTRL + C to quit.')
-        print ("If I don't know, feel free to tell me so I can learn and answer more accurately next time with your reply"  + '\033[m')
+        print('\n\033[31m' + '=Ask a question. CTRL + C to quit.')
+        print ("=If I don't know, tell me so I can learn and answer more accurately next time"  + '\033[m')
         user_input = input()
         print('\033[31m')
         answer = memory.question_memory(user_input, llm=chat, verbose=config['verbose'])
         if answer is not None:
-            if answer.get('source_documents') is not None and config['verbose']:
+            if answer.get('source_documents') is not None:
                 print('\n== Document sources:')
                 i = 0
                 for doc in answer.get('source_documents'):
                     i += 1
                     print(f'-- Source {i}')
                     print(f' - page_content:\n {doc.page_content}')
-                    print(f' - metadata: \n{doc.metadata}')
+                    if config['verbose']:
+                        print(f' - metadata: \n{doc.metadata}')
 
             print('\n================================')
             print('== Answer:\n\n' + answer['result'])

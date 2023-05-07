@@ -239,9 +239,10 @@ Project ID: devo-mark-sandbox
 Cleared memory
 Loaded chatgpt_export/conversations.json into messages
 Summary last 10 messages
+```
 
-The human asks the AI to adjust a task so messages are published to Google PubSub when they are written to disk. The AI is asked to make pubsub_topic an optional variable when the class is created. The human also inquires about the purpose of the "memory_namespace: str" line in the class and whether it is necessary to be there. The AI is asked to adjust the task so that if pubsub_topic is not passed, it will create the pubsub_topic from memory_namespace.
+> The human asks the AI to adjust a task so messages are published to Google PubSub when they are written to disk. The AI is asked to make pubsub_topic an optional variable when the class is created. The human also inquires about the purpose of the "memory_namespace: str" line in the class and whether it is necessary to be there. The AI is asked to adjust the task so that if pubsub_topic is not passed, it will create the pubsub_topic from memory_namespace.
  
- A TimedChatMessage is an object that contains a message and a role (e.g. "user") that is used in the BaseChatMessageHistory class and its subclasses.
- ````
+ > A TimedChatMessage is an object that contains a message and a role (e.g. "user") that is used in the BaseChatMessageHistory class and its subclasses.
+
 

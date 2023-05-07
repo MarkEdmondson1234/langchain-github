@@ -243,6 +243,39 @@ What do you know about GenerativeAgent?
 == Answer:
 
 The code defines the `GenerativeAgent` class, which is a generative agent for a language model or chatbot. This class has methods for generating responses to user prompts based on its memory and the prompt itself. The inputs and outputs for each method are described in the code.
+
+Ask a question. CTRL + C to quit.
+If I don't know, feel free to tell me so I can learn and answer more accurately next time with your reply
+What does 'source_documents' return? A dictionary? Can you see the filename? Show some code on how to return the filename
+
+
+================================
+== Answer:
+
+'source_documents' returns a list of dictionaries, where each dictionary represents a source document for the question. You can access the filename of each source document in the metadata attribute of the corresponding dictionary. The metadata attribute is itself a dictionary that contains various metadata fields, including the filename.
+
+To return the source metadata for a RetrievalQA via `return_source_documents=True`, you can initialize the QA chain as follows:
+
+```
+from haystack import Finder
+from haystack.reader.farm import FARMReader
+from haystack.utils import print_answers
+
+reader = FARMReader(model_name_or_path="deepset/roberta-base-squad2", use_gpu=False)
+finder = Finder(reader, retriever)
+prediction = finder.get_answers(question="What is the capital of Germany?", top_k_retriever=10, top_k_reader=5, return_source_documents=True)
+```
+
+Then, to access the filename of each source document, you can use the following code:
+
+```
+for doc in prediction['source_documents']:
+    filename = doc['metadata']['filename']
+    print(filename)
+```
+
+This will print the filename of each source document in the result.
+
 ````
 
 If you launch with `--verbose` then you can see the sources where it derived the answer from:
