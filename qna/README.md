@@ -172,7 +172,7 @@ Overall, the script combines several natural language processing techniques to e
 Here is an example with the langchain repository https://github.com/hwchase17/langchain which contains lots of files that I wish to build an index for.  Note that this will also send the summaries to the chat history on BigQuery.
 
 1. Fork the repository on GitHub e.g. https://github.com/MarkEdmondson1234/langchain
-1. Clone the repo and create a new fork "summaries"
+1. Clone the repo and create a new fork "summaries" e.g https://github.com/MarkEdmondson1234/langchain/tree/summary 
 1. In your shell browse to the Python package directory e.g. `cd /Users/mark/dev/forks/langchain/langchain`
 1. Issue the command both summarise all the files `--resummarise` (this sends paid for calls to OpenAI) and put those summarises in the Chroma vectorstore (`--reindex`) so they are available for context in your QnA.
 

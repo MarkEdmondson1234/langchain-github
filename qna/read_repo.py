@@ -112,7 +112,7 @@ def generate_code_summary(a_file, memory):
     template = """
 Summarise what the code does below.  Use Markdown in your output. 
 Use this template:
-# heading
+# title of the script
 summary of script purpose
 ## functions
 How the functions relate to each other
