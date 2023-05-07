@@ -124,7 +124,8 @@ The code to summarise is below:
         summary = my_llm.request_llm(
             prompt.format(code=chunk.page_content), 
             chat, 
-            memory)
+            memory,
+            metadata={'task':'summarise_code'})
     
         result = my_llm.parse_code(summary, memory)
         if result is not None:

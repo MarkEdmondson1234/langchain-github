@@ -79,9 +79,9 @@ def request_llm(prompt, chat, memory, verbose=False, metadata:dict =None):
         print(prompt)
 
     if not metadata:
-        metadata={"task": "Chat"}
+        metadata={"task": "chat"}
     else:
-        metadata.setdefault("task", "Chat")
+        metadata.setdefault("task", "chat")
     
     memory.add_user_message(prompt, metadata=metadata)
     
