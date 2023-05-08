@@ -57,7 +57,8 @@ def get_repo_docs(repo_path, extension, memory):
                 if str(non_md_file).startswith(str(ignore_path)):
                       continue
                 generate_code_summary(non_md_file, memory)
-                print(f"Generated summary for a {ext} file: {k} of {num_matched_files} done.")
+                if config['verbose']:
+                    print(f"Generated summary for a {ext} file: {k} of {num_matched_files} done.")
                               
 		# Iterate over all files in the repo (including subdirectories)
         print(f"Reading {ext} files")
@@ -80,7 +81,8 @@ def get_repo_docs(repo_path, extension, memory):
             except Exception as e:
                 print(f"Error reading {md_file}: " + str(e))
             
-            print(f"Read {i} files so far and ignored {j}: total: {num_matched_files}")
+            if config['verbose']:
+                print(f"Read {i} files so far and ignored {j}: total: {num_matched_files}")
         
         print(f"Read {i} and ignored {j} {ext} files.")
         
@@ -91,19 +93,21 @@ def generate_code_summary(a_file, memory):
     
     new_file_name = a_file.with_suffix('.md')
     if os.path.isfile(new_file_name) and not config['resummarise']:
-         #print(f"Skipping generating summary as found existing code summary file: {new_file_name}")
+         if config['verbose']:
+            print(f"Skipping generating summary as found existing code summary file: {new_file_name}")
          return
-    
-    print("================================================")
-    print(f"Requesting code summary for {a_file}   ")
-    print("================================================")
 
     with open(a_file, "r") as file:
         code = file.read()
     
     if len(code) < 10:
-        #print(f"Skipping generation as not enough information.  Got: {code}")
+        if config['verbose']:
+            print(f"Skipping generation as not enough information.  Got: {code}")
         return
+
+    print("================================================")
+    print(f"Requesting code summary for {a_file}   ")
+    print("================================================")
 
     source_chunks = []
     splitter = PythonCodeTextSplitter()
