@@ -25,3 +25,9 @@ steps:
       - "--platform"
       - "managed"
       - "--allow-unauthenticated"
+      - "--update-env-vars"
+      - "OPENAI_API_KEY=$_OPENAI_API_KEY,DISCORD_URL=$_DISCORD_URL"
+secrets:
+  - secretEnv:
+      _OPENAI_API_KEY: OPENAI_API_KEY
+      _DISCORD_URL: DISCORD_URL

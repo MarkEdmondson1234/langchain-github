@@ -4,12 +4,22 @@ This is an exploration on how to interact with the LLM tools in this repo
 
 ## Deploy to Cloud Run
 
+### Add secrets to Secret Manager
+
+* OPENAI_API_KEY
+* DISCORD_URL
+
+### Run Cloud Build
+
 Run from the root directory of this repository
 
 ```
 gcloud builds submit --config cloudbuild.yaml . \
   --substitutions=_IMAGE_NAME=edmonbrain,_SERVICE_NAME=edmonbrain-app,_REGION=europe-west3
 ```
+
+Or preferably set up a Cloud Build Trigger for each git commit
+
 
 ## WebApp
 
