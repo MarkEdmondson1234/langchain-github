@@ -6,20 +6,11 @@ parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(parent_dir)
 
 import openai
-import os, argparse
+import os
 import subprocess
 import shutil
 from langchain.chat_models import ChatOpenAI
 from my_llm import standards as my_llm
-
-
-parser = argparse.ArgumentParser(description="Create a Python script from a prompt string and a test script",
-                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument("prompt", help="Prompt for the script, will be appended with a condition the script needs to pass the test passed to 'test'")
-parser.add_argument("output_file", help="Path to where the output will be written.  Needs to be in location your test_file.py will find it")
-parser.add_argument("--test_file", help="[Optional] Path to the test_file.py you have created that the generated script will need to pass. If excluded will attempt to generate one and pause for you to inspect it")
-args = parser.parse_args()
-config = vars(args)
 
 # Set up OpenAI API
 openai.api_key = os.environ["OPENAI_API_KEY"]
@@ -69,7 +60,7 @@ def run_python_test(test_file):
 
 
 # Main workflow
-def main():
+def main(config):
     # Request code to calculate the sum of the first 100 prime numbers
     test_file = config["test_file"]
     output_file = config["output_file"]
@@ -131,4 +122,14 @@ The tests failed with this error:\n{test_errors}\n
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Create a Python script from a prompt string and a test script",
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("prompt", help="Prompt for the script, will be appended with a condition the script needs to pass the test passed to 'test'")
+    parser.add_argument("output_file", help="Path to where the output will be written.  Needs to be in location your test_file.py will find it")
+    parser.add_argument("--test_file", help="[Optional] Path to the test_file.py you have created that the generated script will need to pass. If excluded will attempt to generate one and pause for you to inspect it")
+    args = parser.parse_args()
+    config = vars(args)
+
+    main(config)

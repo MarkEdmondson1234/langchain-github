@@ -1,0 +1,122 @@
+<!-- index.html -->
+<!doctype html>
+<html>
+  <head>
+    <title>Electric Sheep Brain</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script>
+      function getLocalPath() {
+        const repoInput = document.getElementById('hidden-repo-input');
+        const fullPath = repoInput.files[0].webkitRelativePath.split('/');
+        fullPath.pop();
+        return fullPath.join('/');
+      }
+
+      function sendRequest(event) {
+        event.preventDefault();
+
+        // Show loading message
+        const loadingMessage = document.getElementById('loading-message');
+        loadingMessage.style.display = 'block';
+
+        const user_input = document.getElementById('user_input').value;
+        const localPath = getLocalPath();
+        const reindex = document.getElementById('reindex').checked;
+        const ext = document.getElementById('ext').value;
+        const ignore = document.getElementById('ignore').value;
+        const resummarise = document.getElementById('resummarise').checked;
+
+        const payload = {
+          user_input: user_input,
+          repo: localPath,
+          reindex: reindex,
+          ext: ext,
+          ignore: ignore,
+          resummarise: resummarise
+        };
+
+        fetch('/process_input', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        })
+        .then(response => response.text())
+        .then(data => {
+            // Hide loading message
+            loadingMessage.style.display = 'none';
+
+            const outputElement = document.getElementById('output');
+            const parsedData = JSON.parse(data);
+            let htmlContent = `<h2>Bot Output:</h2><p>${parsedData.result}</p>`;
+
+            if (parsedData.source_documents) {
+                htmlContent += '<h3>Document Sources:</h3>';
+                parsedData.source_documents.forEach((doc, index) => {
+                htmlContent += `<h4>-- Source ${index + 1}</h4>`;
+                htmlContent += `<p> - page_content: ${doc.page_content}</p>`;
+                htmlContent += `<p> - metadata: ${JSON.stringify(doc.metadata)}</p>`;
+                });
+            }
+
+            outputElement.innerHTML = htmlContent;
+            }).catch(error => {
+                console.error('Error:', error);
+                // Hide loading message
+                loadingMessage.style.display = 'none';
+            });
+      }
+    </script>
+    <style>
+        #hidden-repo-input {
+          display: none;
+        }
+        #select-folder-btn {
+          cursor: pointer;
+        }
+      </style>
+  </head>
+  <body>
+    <header>Electric Sheep Brain</header>
+    <form onsubmit="sendRequest(event)">
+      <label for="user_input">User Input:</label>
+      <input type="text" name="user_input" id="user_input" required>
+
+      <label for="repo">Repository:</label>
+      <input type="file" name="repo" id="hidden-repo-input" webkitdirectory style="display: none;">
+      <button type="button" id="select-folder-btn" onclick="document.getElementById('hidden-repo-input').click()">Select Folder</button>
+      <span id="selected-folder"></span>
+      
+
+      <label for="reindex">Reindex:</label>
+      <input type="checkbox" name="reindex" id="reindex">
+
+      <label for="ext">Extensions:</label>
+      <input type="text" name="ext" id="ext">
+
+      <label for="ignore">Ignore:</label>
+      <input type="text" name="ignore" id="ignore">
+
+      <label for="resummarise">Resummarise:</label>
+      <input type="checkbox" name="resummarise" id="resummarise">
+
+      <button type="submit">Send</button>
+    </form>
+    <div id="loading-message" style="display:none;">
+        <p>Loading...</p>
+    </div>
+    <div id="output">
+      {% if bot_output %}
+        <h2>Bot Output:</h2>
+        <p>{{ bot_output }}</p>
+      {% endif %}
+    </div>
+  <script>
+        document.getElementById('hidden-repo-input').addEventListener('change', function() {
+            const selectedFolder = getLocalPath();
+            document.getElementById('selected-folder').textContent = selectedFolder;
+        });
+  </script>
+  </body>
+</html>

@@ -6,7 +6,7 @@ parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(parent_dir)
 
 import pathlib
-import argparse
+
 from langchain.docstore.document import Document
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.text_splitter import PythonCodeTextSplitter
@@ -14,17 +14,6 @@ from langchain.chat_models import ChatOpenAI
 from my_llm import standards as my_llm
 from my_llm.langchain_class import PubSubChatMessageHistory
 from langchain import PromptTemplate
-
-parser = argparse.ArgumentParser(description="Chat with a GitHub repository",
-                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument("repo", help="The GitHub repository on local disk")
-parser.add_argument("--reindex", action="store_true", help="Whether to re-index the doc database that supply context to the Q&A")
-parser.add_argument("--ext", help="Comma separated list of file extensions to include. Defaults to '.md,.py'")
-parser.add_argument("--ignore", help="Directory to ignore file imports from. Defaults to 'env/'")
-parser.add_argument("--resummarise", action="store_true", help="Recreate the code.md files describing the code")
-parser.add_argument("--verbose", action="store_true", help="Include metadata such as sources in replies")
-args = parser.parse_args()
-config = vars(args)
 
 chat = ChatOpenAI(temperature=0.4)
 
@@ -167,10 +156,7 @@ def get_source_docs(repo_path, extension, memory):
 
     return source_chunks
 
-def main():
-
-    # Define the path of the repository and Chroma DB
-    REPO_PATH =config['repo']
+def setup_memory(config):
 
     memory = PubSubChatMessageHistory("qna_documents")
 
@@ -179,8 +165,16 @@ def main():
         exts = '.md,.py'
         if config['ext']:
             exts = config['ext']
-        source_chunks = get_source_docs(REPO_PATH, exts, memory=memory)
+        source_chunks = get_source_docs(config['repo'], exts, memory=memory)
         memory.save_vectorstore_memory(source_chunks)
+
+    return memory 
+
+
+
+def main(config):
+
+    memory = setup_memory(config)
 	
     while True:
         print('\n\033[31m' + '=Ask a question. CTRL + C to quit.')
@@ -205,13 +199,60 @@ def main():
         else:
              print('Sorry')
 
-
-
         print('\033[m')
 
+def document_to_dict(document):
+    return {
+        'page_content': document.page_content,
+        'metadata': document.metadata,
+    }
+
+def process_input(user_input: str, 
+                  repo: str=None, 
+                  reindex: bool =False, 
+                  ext: str='.py,.md', 
+                  ignore: str='env/', 
+                  resummarise: bool =False, 
+                  verbose: bool =True):
+
+    # this is only needed if you need to recreate the vectorstore
+    config = {
+        'repo': repo,
+        'reindex': reindex,
+        'ext': ext,
+        'ignore': ignore,
+        'resummarise': resummarise,
+        'verbose': verbose
+    }
+    
+    memory = setup_memory(config)
+    answer = memory.question_memory(user_input, llm=chat, verbose=verbose)
+
+    response = {'result': answer['result']}
+    if answer.get('source_documents') is not None:
+        source_documents = [document_to_dict(doc) for doc in answer['source_documents']]
+        response['source_documents'] = source_documents
+
+    return response
+
+
 if __name__ == "__main__":
+
+    import argparse
+    parser = argparse.ArgumentParser(description="Chat with a GitHub repository",
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("repo", help="The GitHub repository on local disk")
+    parser.add_argument("--reindex", action="store_true", 
+                        help="Whether to re-index the doc database that supply context to the Q&A")
+    parser.add_argument("--ext", help="Comma separated list of file extensions to include. Defaults to '.md,.py'")
+    parser.add_argument("--ignore", help="Directory to ignore file imports from. Defaults to 'env/'")
+    parser.add_argument("--resummarise", action="store_true", help="Recreate the code.md files describing the code")
+    parser.add_argument("--verbose", action="store_true", help="Include metadata such as sources in replies")
+    args = parser.parse_args()
+    config = vars(args)
+
     try:
-        main()
+        main(config)
     except KeyboardInterrupt:
         print('  - User exit.')
         sys.exit(1)

@@ -1,0 +1,77 @@
+<style>
+  body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+
+  header {
+    background-color: #3f51b5;
+    color: white;
+    text-align: center;
+    padding: 1em;
+    font-size: 2em;
+    margin-bottom: 1em;
+  }
+
+  form {
+    max-width: 800px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(150px, 1fr) minmax(200px, 3fr);
+    gap: 0.5em 1em;
+  }
+  
+  form label {
+    display: inline-block;
+    text-align: right;
+    font-weight: bold;
+    grid-column: 1;
+  }
+
+  form input[type="text"],
+  form input[type="file"],
+  form button,
+  form input[type="checkbox"] {
+    display: inline-block;
+    grid-column: 2;
+  }
+
+  form button {
+    background-color: #3f51b5;
+    color: white;
+    border: none;
+    padding: 0.5em 1em;
+    font-weight: bold;
+    margin-top: 1em;
+  }
+
+  form button:hover {
+    background-color: #283593;
+  }
+
+  #hidden-repo-input {
+    display: none;
+  }
+
+  #select-folder-btn {
+    cursor: pointer;
+  }
+
+  #output {
+    max-width: 800px;
+    margin: 1em auto;
+  }
+
+  #output h2 {
+    color: #3f51b5;
+  }
+
+  #output h3 {
+    color: #283593;
+  }
+
+  #output h4 {
+    color: #1a237e;
+  }
+</style>

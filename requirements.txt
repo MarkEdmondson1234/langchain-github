@@ -7,3 +7,4 @@ python-dateutil
 google-cloud-bigquery
 google-cloud-pubsub
 google-auth
+flask
