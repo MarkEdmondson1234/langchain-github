@@ -13,6 +13,10 @@ app = Flask(__name__)
 def index():
     return render_template('index.html')
 
+@app.route('/reindex', methods=['GET'])
+def reindex():
+    return render_template('reindex.html')
+
 @app.route('/process_input', methods=['POST'])
 def process_input():
     data = request.get_json()
@@ -23,7 +27,9 @@ def process_input():
     ignore      = data.get('ignore', 'env/')
     resummarise = data.get('resummarise', False)
 
-    bot_output = read_repo.process_input(user_input, repo, reindex, ext, ignore, resummarise)
+    print(f'Request data: {data}')
+
+    bot_output = read_repo.process_input(user_input, repo, reindex, ext, ignore, resummarise, verbose=True)
     return bot_output
 
 @app.route('/discord', methods=['POST'])
@@ -94,5 +100,5 @@ def slack():
 
 if __name__ == "__main__":
     import os
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)), debug=True)
 

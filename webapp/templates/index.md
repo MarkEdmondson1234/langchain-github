@@ -1,0 +1,2 @@
+This is a HTML file for a web application that allows users to ask a question and receive a response from a bot. The code includes a form for submitting the user's question, JavaScript functions for sending a POST request to the server with the user's input and displaying the bot's response, and HTML elements for displaying a navigation menu and the bot's output. The code also includes options for ignoring certain files and regenerating summarise.md files. There are no classes in this code. Keywords for this code could be web application, bot, and JavaScript.
+

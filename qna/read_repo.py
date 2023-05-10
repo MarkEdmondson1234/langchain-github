@@ -18,18 +18,16 @@ from langchain import PromptTemplate
 chat = ChatOpenAI(temperature=0.4)
 
 # Get Markdown documents from a repository
-def get_repo_docs(repo_path, extension, memory):
+def get_repo_docs(repo_path, extension, memory, ignore=None, resummarise=False, verbose=False):
     repo = pathlib.Path(repo_path)
-    
-    ignore = 'env/'
-    if config['ignore']:
-        ignore = config['ignore']  
 
-    ignore_path = repo / ignore
-    if not ignore_path.is_dir():
-        print("WARNING: --ignore must be a directory")
-    
-    print('Ignoring %s' % ignore_path)
+    ignore_path = ""
+    if ignore is not None:
+        ignore_path = repo / ignore
+        if not ignore_path.is_dir():
+            print("WARNING: --ignore must be a directory")
+        
+        print('Ignoring %s' % ignore_path)
     
     exts = extension.split(",")
     for ext in exts:
@@ -45,8 +43,8 @@ def get_repo_docs(repo_path, extension, memory):
                 k += 1
                 if str(non_md_file).startswith(str(ignore_path)):
                       continue
-                generate_code_summary(non_md_file, memory)
-                if config['verbose']:
+                generate_code_summary(non_md_file, memory, resummarise=resummarise, verbose=verbose)
+                if verbose:
                     print(f"Generated summary for a {ext} file: {k} of {num_matched_files} done.")
                               
 		# Iterate over all files in the repo (including subdirectories)
@@ -70,7 +68,7 @@ def get_repo_docs(repo_path, extension, memory):
             except Exception as e:
                 print(f"Error reading {md_file}: " + str(e))
             
-            if config['verbose']:
+            if verbose:
                 print(f"Read {i} files so far and ignored {j}: total: {num_matched_files}")
         
         print(f"Read {i} and ignored {j} {ext} files.")
@@ -78,11 +76,11 @@ def get_repo_docs(repo_path, extension, memory):
     print("Read all files")
 
 # Function to summarise code from the OpenAI API     
-def generate_code_summary(a_file, memory):
+def generate_code_summary(a_file, memory, resummarise: bool=False, verbose: bool=False):
     
     new_file_name = a_file.with_suffix('.md')
-    if os.path.isfile(new_file_name) and not config['resummarise']:
-         if config['verbose']:
+    if os.path.isfile(new_file_name) and not resummarise:
+         if verbose:
             print(f"Skipping generating summary as found existing code summary file: {new_file_name}")
          return
 
@@ -90,7 +88,7 @@ def generate_code_summary(a_file, memory):
         code = file.read()
     
     if len(code) < 10:
-        if config['verbose']:
+        if verbose:
             print(f"Skipping generation as not enough information.  Got: {code}")
         return
 
@@ -99,7 +97,7 @@ def generate_code_summary(a_file, memory):
     print("================================================")
 
     source_chunks = []
-    splitter = PythonCodeTextSplitter()
+    splitter = CharacterTextSplitter()
     for chunk in splitter.split_text(code):
         source_chunks.append(Document(page_content=chunk, metadata={"source": a_file}))    
 
@@ -144,11 +142,16 @@ The code to summarise is here:
     return
     
 # Get source chunks from a repository
-def get_source_docs(repo_path, extension, memory):
+def get_source_docs(repo_path, extension, memory, ignore, resummarise, verbose):
     source_chunks = []
 
     splitter = CharacterTextSplitter(separator=" ", chunk_size=1024, chunk_overlap=0)
-    for source in get_repo_docs(repo_path, extension, memory):
+    for source in get_repo_docs(repo_path, 
+                                extension=extension, 
+                                memory=memory, 
+                                ignore=ignore, 
+                                resummarise=resummarise,
+                                verbose=verbose):
         if extension == ".py":
             splitter = PythonCodeTextSplitter()
         for chunk in splitter.split_text(source.page_content):
@@ -165,12 +168,15 @@ def setup_memory(config):
         exts = '.md,.py'
         if config['ext']:
             exts = config['ext']
-        source_chunks = get_source_docs(config['repo'], exts, memory=memory)
+        source_chunks = get_source_docs(config['repo'], 
+                                        extension=exts, 
+                                        memory=memory, 
+                                        ignore=config['ignore'], 
+                                        resummarise=config['resummarise'],
+                                        verbose=config['verbose'])
         memory.save_vectorstore_memory(source_chunks)
 
     return memory 
-
-
 
 def main(config):
 
@@ -178,7 +184,7 @@ def main(config):
 	
     while True:
         print('\n\033[31m' + '=Ask a question. CTRL + C to quit.')
-        print ("=If I don't know, tell me so I can learn and answer more accurately next time"  + '\033[m')
+        print ("=If I don't know, tell me the right answer so I can learn and answer more accurately next time"  + '\033[m')
         user_input = input()
         print('\033[31m')
         answer = memory.question_memory(user_input, llm=chat, verbose=config['verbose'])
@@ -224,6 +230,9 @@ def process_input(user_input: str,
         'resummarise': resummarise,
         'verbose': verbose
     }
+
+    if verbose:
+        print(f"process_input config: {config}")
     
     memory = setup_memory(config)
     answer = memory.question_memory(user_input, llm=chat, verbose=verbose)
