@@ -5,6 +5,7 @@ SELECT
     JSON_VALUE(SAFE.PARSE_JSON(data), "$.timestamp") as created_timestamp,
     JSON_VALUE(SAFE.PARSE_JSON(data), "$.additional_kwargs") as additional_kwargs,
     JSON_QUERY(SAFE.PARSE_JSON(data), "$.metadata") as metadata,
+    JSON_VALUE(SAFE.PARSE_JSON(data), "$.system_string") as system_string,
     SAFE.PARSE_JSON(data) as data_json,
     subscription_name,
     message_id,

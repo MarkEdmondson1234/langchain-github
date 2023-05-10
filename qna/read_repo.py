@@ -99,7 +99,7 @@ def generate_code_summary(a_file, memory, resummarise: bool=False, verbose: bool
     source_chunks = []
     splitter = CharacterTextSplitter()
     for chunk in splitter.split_text(code):
-        source_chunks.append(Document(page_content=chunk, metadata={"source": a_file}))    
+        source_chunks.append(Document(page_content=chunk, metadata={"source": os.path.abspath(a_file)}))    
 
     # create prompt to pass in to LLM
     template = """
@@ -232,6 +232,7 @@ def process_input(user_input: str,
     }
 
     if verbose:
+        print(f"user_input: {user_input}")
         print(f"process_input config: {config}")
     
     memory = setup_memory(config)

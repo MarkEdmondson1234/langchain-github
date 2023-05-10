@@ -47,20 +47,18 @@ class PubSubManager:
     def _callback(future):
         try:
             message_id = future.result()
-            #print(f"Published message with ID: {message_id}")
+            print(f"Published message with ID: {message_id}")
         except Exception as e:
             print(f"Failed to publish message: {e}")
 
     def publish_message(self, message):
         """Publishes the given data to Google Pub/Sub."""
         if self.publisher and self.pubsub_topic:
-            message_json = json.dumps(message, default=self._datetime_converter)
+            #print("Message type:", type(message))
+            message_json = json.dumps(message, default=lambda obj: obj.to_dict())
+            #print(f"pubsub_message_json: {message_json}")
             message_bytes = message_json.encode('utf-8')
             attr = {"namespace": str(self.memory_namespace)}
             future = self.publisher.publish(self.pubsub_topic, message_bytes, attrs=json.dumps(attr))
             future.add_done_callback(self._callback)
 
-    @staticmethod
-    def _datetime_converter(o):
-        if isinstance(o, datetime.datetime):
-            return o.__str__()

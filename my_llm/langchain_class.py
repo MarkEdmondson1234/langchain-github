@@ -1,6 +1,6 @@
-import os, json, shutil
+import os, json
 
-from langchain.schema import ChatMessage, BaseChatMessageHistory
+from langchain.schema import BaseChatMessageHistory
 from langchain.memory import ConversationTokenBufferMemory
 from langchain.llms import OpenAI
 
@@ -9,25 +9,14 @@ from langchain.memory import ConversationSummaryBufferMemory
 from langchain.chains import RetrievalQA
 
 from langchain.docstore.document import Document
-from langchain.text_splitter import CharacterTextSplitter
-from langchain.vectorstores import Chroma
 from langchain.embeddings.openai import OpenAIEmbeddings
 
 from datetime import datetime
 from dateutil.parser import parse
 
 from my_llm.pubsub_manager import PubSubManager
-
-from pydantic import Field
-
-class TimedChatMessage(ChatMessage):
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
-    metadata: dict = Field(default_factory=dict)
-
-    def __init__(self, content, role, timestamp=None, metadata=None, **kwargs):
-        kwargs['timestamp'] = timestamp or datetime.utcnow()
-        kwargs['metadata'] = metadata if metadata is not None else {}
-        super().__init__(content=content, role=role, **kwargs)
+from my_llm.vectorstore import MessageVectorStore
+from my_llm.timed_chat_message import TimedChatMessage
 
 
 class PubSubChatMessageHistory(BaseChatMessageHistory):
@@ -39,6 +28,7 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
         self.mem_path = None
         self.vector_db = None
         self.pubsub_manager = PubSubManager(memory_namespace, pubsub_topic=pubsub_topic)
+        self.vectorstore_manager = MessageVectorStore(memory_namespace, self.messages, embedding=OpenAIEmbeddings())
 
 
     def set_mem_path(self, path: str):
@@ -60,19 +50,6 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
         else:
             print('Found no MESSAGE_HISTORY set')
             return None
-        
-    def get_mem_vectorstore(self):
-        if not self.memory_namespace:
-            print("No memory namespace specified")
-            return None
-        
-        if os.getenv('MESSAGE_HISTORY'):
-            return os.path.join(os.getenv('MESSAGE_HISTORY'), 
-                                self.memory_namespace, 
-                                "chroma/")
-        else:
-            print('Found no MESSAGE_HISTORY set')
-            return None
 
     @staticmethod
     def _datetime_converter(o):
@@ -89,15 +66,13 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
             json.dump(data, f, default=self._datetime_converter)
             f.write('\n')
 
-    @staticmethod
-    def _callback(future):
-        try:
-            message_id = future.result()
-            #print(f"Published message with ID: {message_id}")
-        except Exception as e:
-            print(f"Failed to publish message: {e}")
-
     def _route_message(self, timed_message, verbose=False):
+
+        metadata = timed_message.metadata if timed_message.metadata is not None else {}
+        metadata["role"] = timed_message.role
+        metadata["timestamp"] = str(timed_message.timestamp)
+        doc = Document(page_content=timed_message.content, metadata=metadata)
+
         # write to disk
         if self.memory_namespace:
             mem_path = self.get_mem_path()
@@ -109,12 +84,8 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
             self.pubsub_manager.publish_message(timed_message)
 
         # save to vectorstore
-        metadata = timed_message.metadata if timed_message.metadata is not None else {}
-        metadata["role"] = timed_message.role
-        metadata["timestamp"] = str(timed_message.timestamp)
-        doc = Document(page_content=timed_message.content, metadata=metadata)
-
-        self.save_vectorstore_memory([doc], verbose=verbose)
+        if self.vectorstore_manager:
+            self.vectorstore_manager.save_vectorstore_memory([doc], verbose=verbose)
 
 
     def add_user_message(self, message, metadata: dict=None, verbose=False):
@@ -145,20 +116,17 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
         self.messages = []
         
         # remove any vectorstore
-        dir_path = self.get_mem_vectorstore()
+        if self.vectorstore_manager:
+            self.vectorstore_manager.clear()
 
-        # Check if the Chroma database exists on disk
-        if os.path.isdir(dir_path):
-            try:
-                shutil.rmtree(dir_path)
-                print(f"Directory '{dir_path}' has been deleted.")
-            except OSError as e:
-                print(f"Error deleting directory '{dir_path}': {e}")
     
     def print_messages(self, n: int =None):
         if not self.messages:
             print("No messages found")
             return None
+        
+        if n is None:
+            n = 10000
         
         i = 0
         for message in self.messages:
@@ -264,7 +232,10 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
         return "\n".join(res)
     
     def question_memory(self, question: str, llm=OpenAI(temperature=0), verbose=False):
-        db = self.load_vectorstore_memory()
+        db = self.vectorstore_manager.load_vectorstore_memory()
+
+        if verbose:
+            print(f"Question: {question}")
 
         docs = db.similarity_search(question)
         if len(docs) == 0:
@@ -295,88 +266,6 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
         self.add_ai_message(answer, metadata=metadata, verbose=verbose)
 
         return result
-    
-    def create_vectorstore_memory(self, embedding=OpenAIEmbeddings()):
-        db_path = self.get_mem_vectorstore()
-        what_we_are_doing = f'Creating Chroma DB at {db_path} ...'
-        print(what_we_are_doing)
-
-        # we need a message to init the db
-        init_message = TimedChatMessage(content=what_we_are_doing, 
-                                        role="system", 
-                                        metadata={'task': 'chromadb_init'})
-        self.messages.append(init_message)
-
-        source_chunks = self._get_source_chunks()
-        vector_db = Chroma.from_documents(source_chunks, 
-                                          embedding, 
-                                          persist_directory=db_path)
-        self.vector_db = vector_db
-        vector_db.persist()
-
-        return vector_db
-    
-    def save_vectorstore_memory(self, documents=None, verbose=False):
-
-        vector_db = self.load_vectorstore_memory()
-
-        source_chunks = self._get_source_chunks(documents)
-        ids = vector_db.add_documents(source_chunks)
-
-        if verbose:
-            print(f'Saved {len(ids)} documents to vectorstore:')
-            for chunk in source_chunks:
-                print(chunk.page_content[:30].strip() + "...")
-                print(chunk.metadata)
-
-        return ids
-
-    def load_vectorstore_memory(self, embedding=OpenAIEmbeddings()):
-
-        if self.vector_db is not None:
-            return self.vector_db
-        
-        db_path = self.get_mem_vectorstore()
-
-        # Check if the Chroma database exists on disk
-        if not os.path.exists(db_path):
-            # If it doesn't exist, create and persist the database
-            vector_db = self.create_vectorstore_memory()
-        else:
-            # If it exists, load the database from disk
-            print(f"Loading existing vectorstore database from {db_path}")
-            vector_db = Chroma(persist_directory=db_path, embedding_function=embedding)
-
-        self.vector_db = vector_db
-
-        return vector_db
-
-    def _get_source_chunks(self, documents=None):
-        source_chunks = []
-
-        if documents is None:
-            documents = self._get_memory_documents()
-        # Create a CharacterTextSplitter object for splitting the text
-        splitter = CharacterTextSplitter(separator=" ", 
-                                         chunk_size=2048, 
-                                         chunk_overlap=0)
-        for source in documents:
-            for chunk in splitter.split_text(source.page_content):
-                source_chunks.append(Document(page_content=chunk, 
-                                              metadata=source.metadata))
-
-        return source_chunks
-    
-    def _get_memory_documents(self):
-        docs = []
-        for message in self.messages:
-            doc = Document(page_content=message.content, 
-                           metadata={
-                               "role": message.role,
-                               "timestamp": str(message.timestamp)
-                           })
-            docs.append(doc)
-        return docs
     
     
     def load_chatgpt_export(self, conversations_file: str):
