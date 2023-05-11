@@ -1,5 +1,6 @@
 import os
 import shutil
+import atexit
 from pathlib import Path
 
 from langchain.docstore.document import Document
@@ -9,15 +10,25 @@ from langchain.vectorstores import Chroma
 
 from my_llm.timed_chat_message import TimedChatMessage
 
+from google.cloud import storage
+
 class MessageVectorStore:
     """
-    Creates a VectorStore and stores messages within it
+    Creates a VectorStore and stores messages within it.
+        memory_namespace: Governs where vectordata is stored
+        messages: Messages sent to this VectorStore
+        embedding: The Embedding that is used within this VectorStore e.g. OpenAIEmbeddings()
+        bucket: if specified saves and loads vectorstore to GCP as well as locally: gs://name-of-bucket
     """
-    def __init__(self, memory_namespace, messages, embedding):
+    def __init__(self, memory_namespace, messages, embedding, bucket:str=None):
         self.memory_namespace = memory_namespace
         self.vector_db = None
         self.messages = messages
         self.embedding = embedding
+        self.bucket = bucket
+    
+    def set_bucket(self, bucket):
+        self.bucket = bucket
     
     def get_mem_vectorstore(self):
         """
@@ -27,11 +38,9 @@ class MessageVectorStore:
             print("No memory namespace specified")
             return None
 
-        if os.getenv('MESSAGE_HISTORY'):
-            return Path(os.getenv('MESSAGE_HISTORY'), self.memory_namespace, "chroma")
-        else:
-            print('Found no MESSAGE_HISTORY set')
-            return None
+        return Path(os.getenv('MESSAGE_HISTORY',"."), 
+                    "vectorstore", self.memory_namespace)
+
 
     def clear(self):
         """
@@ -61,12 +70,24 @@ class MessageVectorStore:
 
         return ids
 
-    def load_vectorstore_memory(self, embedding=None):
+    def load_vectorstore_memory(self, embedding=None, verbose=False):
 
         if self.vector_db is not None:
             return self.vector_db
         
         db_path = self.get_mem_vectorstore()
+
+        if self.bucket is not None:
+            # Check if the directory exists in the GCS bucket
+            directory_path = self._default_gcs_dirname()
+            if not self._gcs_directory_exists(self.bucket, directory_path):
+                print(f"Directory '{directory_path}' not found in the GCS bucket '{self.bucket}'")
+            else:
+                if verbose:
+                    print(f"Found directory '{directory_path}' in the GCS bucket '{self.bucket}'")
+
+                # now should be available to load locally
+                self.get_vectorstore_gcs(self.bucket)
 
         # Check if the Chroma database exists on disk
         if not os.path.exists(db_path):
@@ -74,19 +95,103 @@ class MessageVectorStore:
             vector_db = self.create_vectorstore_memory(embedding=embedding)
         else:
             # If it exists, load the database from disk
-            print(f"Loading existing vectorstore database from {db_path}")
-            if self.embedding is None and embedding is None:
-                print(f"Can't load existing vectorstore database without embedding function e.g. OpenAIEmbeddings()")
-                return None
+            vector_db = self.load_vectorstore_from_disk(embedding=embedding)
             
-            if embedding is not None:
-                self.embedding = embedding
-            
-            vector_db = Chroma(persist_directory=str(db_path), embedding_function=self.embedding)
- 
         self.vector_db = vector_db
 
+        if verbose:
+            print("Loaded vectorstore")
+
         return vector_db
+
+    def load_vectorstore_from_disk(self, embedding):
+        db_path = self.get_mem_vectorstore()
+        print(f"Loading existing vectorstore database from {db_path}")
+        if self.embedding is None and embedding is None:
+            print(f"Can't load existing vectorstore database without embedding function e.g. OpenAIEmbeddings()")
+            return None
+        
+        if embedding is not None:
+            self.embedding = embedding
+        
+        return Chroma(persist_directory=str(db_path), embedding_function=self.embedding)
+
+    def _default_gcs_dirname(self):
+        local_dir = self.get_mem_vectorstore()
+        
+        return os.path.dirname(local_dir) + '/' + self.memory_namespace 
+
+
+    def _gcs_directory_exists(self, bucket, prefix):
+        """
+        Check if a directory exists in a GCS bucket.
+        """
+        for blob in bucket.list_blobs(prefix=prefix):
+            if blob.name.startswith(prefix):
+                return True
+        return False
+    
+    def get_vectorstore_gcs(self, bucket_name, directory_path=None):
+        client = storage.Client()
+        bucket = client.get_bucket(bucket_name)
+        local_dir = self.get_mem_vectorstore()
+
+        if directory_path is None:
+            directory_path = self._default_gcs_dirname()
+
+        if not local_dir:
+            print("No local directory specified for vectorstore")
+            return
+
+        # Check if the directory exists in the GCS bucket
+        if not self._gcs_directory_exists(bucket, directory_path):
+            print(f"Directory '{directory_path}' not found in the GCS bucket '{bucket_name}'")
+            return
+
+        os.makedirs(local_dir, exist_ok=True)
+        self._download_directory(bucket, directory_path, local_dir)
+
+        self.auto_save_vectorstore_gcs(bucket_name, local_dir)
+
+    def _download_directory(self, bucket, prefix, local_dir):
+        """
+        Download a directory and its contents from GCS bucket to a local directory.
+        """
+        for blob in bucket.list_blobs(prefix=prefix):
+            local_filepath = os.path.join(local_dir, os.path.relpath(blob.name, prefix))
+            os.makedirs(os.path.dirname(local_filepath), exist_ok=True)
+            with open(local_filepath, "wb") as local_file:
+                blob.download_to_file(local_file)
+
+    def _upload_directory(self, bucket, prefix, local_dir):
+        """
+        Upload a local directory and its contents to a GCS bucket.
+        """
+        for root, dirs, files in os.walk(local_dir):
+            for file in files:
+                local_filepath = os.path.join(root, file)
+                remote_filepath = os.path.join(prefix, os.path.relpath(local_filepath, local_dir))
+                blob = storage.Blob(remote_filepath, bucket)
+                with open(local_filepath, "rb") as local_file:
+                    blob.upload_from_file(local_file)
+
+    def save_vectorstore_gcs(self, bucket_name, directory_path=None):
+        local_dir = self.get_mem_vectorstore()
+
+        if directory_path is None:
+            directory_path = self._default_gcs_dirname()
+
+        if not local_dir:
+            print("No local directory specified for vectorstore")
+            return
+
+        client = storage.Client()
+        bucket = client.get_bucket(bucket_name)
+        self.upload_directory(bucket, directory_path, local_dir)
+
+    def auto_save_vectorstore_gcs(self, bucket_name, dir_path):
+        atexit.register(self.save_vectorstore_gcs, bucket_name, dir_path)
+
 
     def create_vectorstore_memory(self, embedding=None):
         db_path = self.get_mem_vectorstore()
@@ -109,6 +214,9 @@ class MessageVectorStore:
                                           persist_directory=db_path)
         self.vector_db = vector_db
         vector_db.persist()
+
+        if self.bucket:
+            self.auto_save_vectorstore_gcs(self.bucket, db_path)
 
         return vector_db
 

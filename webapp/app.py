@@ -26,10 +26,20 @@ def process_input():
     ext         = data.get('ext', '.py,.md')
     ignore      = data.get('ignore', 'env/')
     resummarise = data.get('resummarise', False)
+    bucket      = os.getenv('GCS_BUCKET', None)
 
     print(f'Request data: {data}')
 
-    bot_output = read_repo.process_input(user_input, repo, reindex, ext, ignore, resummarise, verbose=True)
+    bot_output = read_repo.process_input(
+        user_input=user_input, 
+        repo=repo, 
+        reindex=reindex, 
+        ext=ext, 
+        ignore=ignore, 
+        resummarise=resummarise, 
+        verbose=True,
+        bucket=bucket)
+    
     return bot_output
 
 @app.route('/discord', methods=['POST'])

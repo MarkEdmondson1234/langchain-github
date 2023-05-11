@@ -21,14 +21,21 @@ from my_llm.timed_chat_message import TimedChatMessage
 
 class PubSubChatMessageHistory(BaseChatMessageHistory):
 
-    def __init__(self, memory_namespace: str, pubsub_topic: str = None):
+    def __init__(self, memory_namespace: str, pubsub_topic: str = None, bucket_name: str = None):
         super().__init__()
         self.memory_namespace = memory_namespace
         self.messages = []
         self.mem_path = None
         self.pubsub_manager = PubSubManager(memory_namespace, pubsub_topic=pubsub_topic)
-        self.vectorstore_manager = MessageVectorStore(memory_namespace, self.messages, embedding=OpenAIEmbeddings())
-
+        self.vectorstore_manager = MessageVectorStore(
+            memory_namespace, 
+            messages = self.messages, 
+            embedding=OpenAIEmbeddings(),
+            bucket=bucket_name)
+    
+    def set_bucket(self, bucket_name):
+        if self.vectorstore_manager:
+            self.vectorstore_manager.set_bucket(bucket_name)
 
     def set_mem_path(self, path: str):
         self.mem_path = path
@@ -90,7 +97,19 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
         # save to vectorstore
         if self.vectorstore_manager:
             self.vectorstore_manager.save_vectorstore_memory([doc], verbose=verbose)
+    
 
+    def save_vectorstore_memory(self, docs, verbose=False):
+        if not self.vectorstore_manager:
+            print("No vectorstore found to save to")
+        
+        self.vectorstore_manager.save_vectorstore_memory(docs, verbose=verbose)
+
+    def load_vectorstore_memory(self, verbose=False):
+        if not self.vectorstore_manager:
+            print("No vectorstore found to load")
+
+        return self.vectorstore_manager.load_vectorstore_memory(verbose=verbose)
 
     def add_user_message(self, message, metadata: dict=None, verbose=False):
         timed_message = TimedChatMessage(content=message, role="user", metadata=metadata)

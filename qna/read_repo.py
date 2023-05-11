@@ -163,6 +163,10 @@ def setup_memory(config):
 
     memory = PubSubChatMessageHistory("qna_documents")
 
+    if config.get('bucket', None) is not None:
+        memory.set_bucket(config.get('bucket'))
+        memory.load_vectorstore_memory()
+
     if config['reindex']:
 		# Create a new Chroma DB
         exts = '.md,.py'
@@ -174,7 +178,7 @@ def setup_memory(config):
                                         ignore=config['ignore'], 
                                         resummarise=config['resummarise'],
                                         verbose=config['verbose'])
-        memory.save_vectorstore_memory(source_chunks)
+        memory.save_vectorstore_memory(source_chunks, verbose=config['verbose'])
 
     return memory 
 
@@ -219,7 +223,8 @@ def process_input(user_input: str,
                   ext: str='.py,.md', 
                   ignore: str='env/', 
                   resummarise: bool =False, 
-                  verbose: bool =True):
+                  verbose: bool =True,
+                  bucket: str = None):
 
     # this is only needed if you need to recreate the vectorstore
     config = {
@@ -228,7 +233,8 @@ def process_input(user_input: str,
         'ext': ext,
         'ignore': ignore,
         'resummarise': resummarise,
-        'verbose': verbose
+        'verbose': verbose,
+        'bucket': bucket
     }
 
     if verbose:
@@ -258,6 +264,7 @@ if __name__ == "__main__":
     parser.add_argument("--ignore", help="Directory to ignore file imports from. Defaults to 'env/'")
     parser.add_argument("--resummarise", action="store_true", help="Recreate the code.md files describing the code")
     parser.add_argument("--verbose", action="store_true", help="Include metadata such as sources in replies")
+    parser.add_argument("--bucket", help="A Google Cloud Storage bucket name e.g. ga://your-bucket-name")
     args = parser.parse_args()
     config = vars(args)
 

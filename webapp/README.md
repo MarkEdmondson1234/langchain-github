@@ -15,7 +15,7 @@ Run from the root directory of this repository
 
 ```
 gcloud builds submit --config cloudbuild.yaml . \
-  --substitutions=_IMAGE_NAME=edmonbrain,_SERVICE_NAME=edmonbrain-app,_REGION=europe-west3
+  --substitutions=_IMAGE_NAME=edmonbrain,_SERVICE_NAME=edmonbrain-app,_REGION=europe-west3,_GCS_BUCKET=bucket-to-store-vectorstore
 ```
 
 Or preferably set up a Cloud Build Trigger for each git commit

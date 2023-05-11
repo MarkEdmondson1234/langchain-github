@@ -2,6 +2,7 @@ substitutions:
   _IMAGE_NAME: your-image-name
   _SERVICE_NAME: your-service-name
   _REGION: your-region
+  _GCS_BUCKET: your-gcs-bucket
 
 steps:
   # Build the Docker image
@@ -26,7 +27,7 @@ steps:
       - "managed"
       - "--allow-unauthenticated"
       - "--update-env-vars"
-      - "OPENAI_API_KEY=$$OPENAI_API_KEY,DISCORD_URL=$$DISCORD_URL"
+      - "OPENAI_API_KEY=$$OPENAI_API_KEY,DISCORD_URL=$$DISCORD_URL,GCS_BUCKET=${_GCS_BUCKET}"
     secretEnv: ["OPENAI_API_KEY", "DISCORD_URL"]
 
 availableSecrets:
