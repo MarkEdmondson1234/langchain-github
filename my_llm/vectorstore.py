@@ -8,7 +8,7 @@ from langchain.text_splitter import CharacterTextSplitter
 
 from langchain.vectorstores import Chroma
 
-from my_llm.timed_chat_message import TimedChatMessage
+from google.api_core.exceptions import NotFound
 
 from google.cloud import storage
 
@@ -28,15 +28,13 @@ class MessageVectorStore:
         self.bucket_name = bucket_name
         self.bucket_client = None
 
-        if self.bucket_name is not None:
-            client = storage.Client()
-            self.bucket_client = client.get_bucket(self.bucket_name)
+        if self.bucket_name:
+            self._get_set_bucket_client(self.bucket_name)
     
     def set_bucket(self, bucket_name):
         self.bucket_name = bucket_name
 
-        client = storage.Client()
-        self.bucket_client = client.get_bucket(self.bucket_name)
+        self._get_set_bucket_client(bucket_name)
     
     def get_mem_vectorstore(self):
         """
@@ -138,20 +136,26 @@ class MessageVectorStore:
         if self.bucket_name is None:
             self.bucket_name = bucket_name
 
-        if not self.bucket_client:
-            client = storage.Client()
-            self.bucket_client = client.get_bucket(self.bucket_name)
+        self._get_set_bucket_client(bucket_name)
 
-        for blob in self.bucket_client.list_blobs(prefix=prefix):
-            if blob.name.startswith(prefix):
-                return True
+        if self.bucket_client:
+            for blob in self.bucket_client.list_blobs(prefix=prefix):
+                if blob.name.startswith(prefix):
+                    return True
         return False
+    
+    def _get_set_bucket_client(self, bucket_name: str):
+        if self.bucket_client is None:
+            client = storage.Client()
+            try:
+                self.bucket_client = client.get_bucket(bucket_name)
+            except NotFound:
+                print(f"bucket {bucket_name} not found")
+                return None
     
     def get_vectorstore_gcs(self, bucket_name, directory_path=None):
 
-        if self.bucket_client is None:
-            client = storage.Client()
-            self.bucket_client = client.get_bucket(bucket_name)
+        self._get_set_bucket_client(bucket_name)
         
         local_dir = self.get_mem_vectorstore()
 
@@ -203,12 +207,11 @@ class MessageVectorStore:
         if not local_dir:
             print("No local directory specified for vectorstore")
             return
+        
+        self._get_set_bucket_client(bucket_name)
 
-        if self.bucket_client is None:
-            client = storage.Client()
-            self.bucket_client = client.get_bucket(bucket_name)
-
-        self.upload_directory(self.bucket_client, directory_path, local_dir)
+        if self.bucket_client:
+            self.upload_directory(self.bucket_client, directory_path, local_dir)
 
     def auto_save_vectorstore_gcs(self, bucket_name, dir_path):
         atexit.register(self.save_vectorstore_gcs, bucket_name, dir_path)
