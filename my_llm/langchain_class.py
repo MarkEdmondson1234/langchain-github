@@ -31,7 +31,7 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
             memory_namespace, 
             messages = self.messages, 
             embedding=OpenAIEmbeddings(),
-            bucket=bucket_name)
+            bucket_name=bucket_name)
     
     def set_bucket(self, bucket_name):
         if self.vectorstore_manager:
@@ -97,6 +97,7 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
         # save to vectorstore
         if self.vectorstore_manager:
             self.vectorstore_manager.save_vectorstore_memory([doc], verbose=verbose)
+            self.vectorstore_manager.messages.append(timed_message)
     
 
     def save_vectorstore_memory(self, docs, verbose=False):

@@ -18,7 +18,7 @@ class MessageVectorStore:
         memory_namespace: Governs where vectordata is stored
         messages: Messages sent to this VectorStore
         embedding: The Embedding that is used within this VectorStore e.g. OpenAIEmbeddings()
-        bucket: if specified saves and loads vectorstore to GCP as well as locally: gs://name-of-bucket
+        bucket_name: if specified saves and loads vectorstore to GCP as well as locally: gs://name-of-bucket
     """
     def __init__(self, memory_namespace, messages, embedding, bucket_name:str=None):
         self.memory_namespace = memory_namespace
@@ -89,13 +89,13 @@ class MessageVectorStore:
             # Check if the directory exists in the GCS bucket
             directory_path = self._default_gcs_dirname()
             if not self._gcs_directory_exists(self.bucket_name, directory_path):
-                print(f"Directory '{directory_path}' not found in the GCS bucket '{self.bucket}'")
+                print(f"Directory '{directory_path}' not found in the GCS bucket '{self.bucket_name}'")
             else:
                 if verbose:
-                    print(f"Found directory '{directory_path}' in the GCS bucket '{self.bucket}'")
+                    print(f"Found directory '{directory_path}' in the GCS bucket '{self.bucket_name}'")
 
                 # now should be available to load locally
-                self.get_vectorstore_gcs(self.bucket)
+                self.get_vectorstore_gcs(self.bucket_name)
 
         # Check if the Chroma database exists on disk
         if not os.path.exists(db_path):
@@ -207,7 +207,7 @@ class MessageVectorStore:
         if self.bucket_client is None:
             client = storage.Client()
             self.bucket_client = client.get_bucket(bucket_name)
-            
+
         self.upload_directory(self.bucket_client, directory_path, local_dir)
 
     def auto_save_vectorstore_gcs(self, bucket_name, dir_path):
@@ -217,6 +217,9 @@ class MessageVectorStore:
     def create_vectorstore_memory(self, embedding=None):
         db_path = self.get_mem_vectorstore()
 
+        if embedding is not None:
+            self.embedding = embedding
+
         if self.embedding is None and embedding is None:
             print(f"Can't load existing vectorstore database without embedding function e.g. OpenAIEmbeddings()")
             return None
@@ -224,20 +227,20 @@ class MessageVectorStore:
         what_we_are_doing = f'Creating Chroma DB at {db_path} ...'
         print(what_we_are_doing)
 
-        # we need a message to init the db
-        init_message = TimedChatMessage(content=what_we_are_doing, 
-                                        role="system", 
-                                        metadata={'task': 'chromadb_init'})
+        # we need a few messages to init the db
+        init_docs = []
+        for i in range(5):
+            doc = Document(page_content=what_we_are_doing+str(i), metadata={'task': 'chromadb_init'})
+            init_docs.append(doc)
 
-        source_chunks = self._get_source_chunks(init_message)
-        vector_db = Chroma.from_documents(source_chunks, 
-                                          embedding, 
-                                          persist_directory=db_path)
+        vector_db = Chroma.from_documents(init_docs, 
+                                          self.embedding, 
+                                          persist_directory=str(db_path))
         self.vector_db = vector_db
         vector_db.persist()
 
-        if self.bucket:
-            self.auto_save_vectorstore_gcs(self.bucket, db_path)
+        if self.bucket_name:
+            self.auto_save_vectorstore_gcs(self.bucket_name, db_path)
 
         return vector_db
 
