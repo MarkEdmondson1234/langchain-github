@@ -26,7 +26,7 @@ def process_input():
     ext         = data.get('ext', '.py,.md')
     ignore      = data.get('ignore', 'env/')
     resummarise = data.get('resummarise', False)
-    bucket      = os.getenv('GCS_BUCKET', None)
+    bucket_name = os.getenv('GCS_BUCKET', None)
 
     print(f'Request data: {data}')
 
@@ -38,7 +38,7 @@ def process_input():
         ignore=ignore, 
         resummarise=resummarise, 
         verbose=True,
-        bucket=bucket)
+        bucket_name=bucket_name)
     
     return bot_output
 

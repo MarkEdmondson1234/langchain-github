@@ -20,15 +20,23 @@ class MessageVectorStore:
         embedding: The Embedding that is used within this VectorStore e.g. OpenAIEmbeddings()
         bucket: if specified saves and loads vectorstore to GCP as well as locally: gs://name-of-bucket
     """
-    def __init__(self, memory_namespace, messages, embedding, bucket:str=None):
+    def __init__(self, memory_namespace, messages, embedding, bucket_name:str=None):
         self.memory_namespace = memory_namespace
         self.vector_db = None
         self.messages = messages
         self.embedding = embedding
-        self.bucket = bucket
+        self.bucket_name = bucket_name
+        self.bucket_client = None
+
+        if self.bucket_name is not None:
+            client = storage.Client()
+            self.bucket_client = client.get_bucket(self.bucket_name)
     
-    def set_bucket(self, bucket):
-        self.bucket = bucket
+    def set_bucket(self, bucket_name):
+        self.bucket_name = bucket_name
+
+        client = storage.Client()
+        self.bucket_client = client.get_bucket(self.bucket_name)
     
     def get_mem_vectorstore(self):
         """
@@ -77,10 +85,10 @@ class MessageVectorStore:
         
         db_path = self.get_mem_vectorstore()
 
-        if self.bucket is not None:
+        if self.bucket_name is not None:
             # Check if the directory exists in the GCS bucket
             directory_path = self._default_gcs_dirname()
-            if not self._gcs_directory_exists(self.bucket, directory_path):
+            if not self._gcs_directory_exists(self.bucket_name, directory_path):
                 print(f"Directory '{directory_path}' not found in the GCS bucket '{self.bucket}'")
             else:
                 if verbose:
@@ -122,18 +130,29 @@ class MessageVectorStore:
         return os.path.dirname(local_dir) + '/' + self.memory_namespace 
 
 
-    def _gcs_directory_exists(self, bucket, prefix):
+    def _gcs_directory_exists(self, bucket_name, prefix):
         """
         Check if a directory exists in a GCS bucket.
         """
-        for blob in bucket.list_blobs(prefix=prefix):
+
+        if self.bucket_name is None:
+            self.bucket_name = bucket_name
+
+        if not self.bucket_client:
+            client = storage.Client()
+            self.bucket_client = client.get_bucket(self.bucket_name)
+
+        for blob in self.bucket_client.list_blobs(prefix=prefix):
             if blob.name.startswith(prefix):
                 return True
         return False
     
     def get_vectorstore_gcs(self, bucket_name, directory_path=None):
-        client = storage.Client()
-        bucket = client.get_bucket(bucket_name)
+
+        if self.bucket_client is None:
+            client = storage.Client()
+            self.bucket_client = client.get_bucket(bucket_name)
+        
         local_dir = self.get_mem_vectorstore()
 
         if directory_path is None:
@@ -144,12 +163,12 @@ class MessageVectorStore:
             return
 
         # Check if the directory exists in the GCS bucket
-        if not self._gcs_directory_exists(bucket, directory_path):
+        if not self._gcs_directory_exists(bucket_name, directory_path):
             print(f"Directory '{directory_path}' not found in the GCS bucket '{bucket_name}'")
             return
 
         os.makedirs(local_dir, exist_ok=True)
-        self._download_directory(bucket, directory_path, local_dir)
+        self._download_directory(self.bucket_client, directory_path, local_dir)
 
         self.auto_save_vectorstore_gcs(bucket_name, local_dir)
 
@@ -185,9 +204,11 @@ class MessageVectorStore:
             print("No local directory specified for vectorstore")
             return
 
-        client = storage.Client()
-        bucket = client.get_bucket(bucket_name)
-        self.upload_directory(bucket, directory_path, local_dir)
+        if self.bucket_client is None:
+            client = storage.Client()
+            self.bucket_client = client.get_bucket(bucket_name)
+            
+        self.upload_directory(self.bucket_client, directory_path, local_dir)
 
     def auto_save_vectorstore_gcs(self, bucket_name, dir_path):
         atexit.register(self.save_vectorstore_gcs, bucket_name, dir_path)

@@ -163,8 +163,8 @@ def setup_memory(config):
 
     memory = PubSubChatMessageHistory("qna_documents")
 
-    if config.get('bucket', None) is not None:
-        memory.set_bucket(config.get('bucket'))
+    if config.get('bucket_name', None) is not None:
+        memory.set_bucket(config.get('bucket_name'))
         memory.load_vectorstore_memory()
 
     if config['reindex']:
@@ -224,7 +224,7 @@ def process_input(user_input: str,
                   ignore: str='env/', 
                   resummarise: bool =False, 
                   verbose: bool =True,
-                  bucket: str = None):
+                  bucket_name: str = None):
 
     # this is only needed if you need to recreate the vectorstore
     config = {
@@ -234,7 +234,7 @@ def process_input(user_input: str,
         'ignore': ignore,
         'resummarise': resummarise,
         'verbose': verbose,
-        'bucket': bucket
+        'bucket_name': bucket_name
     }
 
     if verbose:
