@@ -15,21 +15,15 @@ steps:
 
   # Deploy the image to Cloud Run
   - name: "gcr.io/cloud-builders/gcloud"
-    entrypoint:
+    entrypoint: bash
     args:
-      - "gcloud"
-      - "run"
-      - "deploy"
-      - "${_SERVICE_NAME}"
-      - "--image"
-      - "gcr.io/$PROJECT_ID/${_IMAGE_NAME}"
-      - "--region"
-      - "${_REGION}"
-      - "--platform"
-      - "managed"
-      - "--allow-unauthenticated"
-      - "--update-env-vars"
-      - "OPENAI_API_KEY=$$OPENAI_API_KEY,DISCORD_URL=$$DISCORD_URL,GCS_BUCKET=${_GCS_BUCKET}"
+      - "-c"
+      - |
+        gcloud run deploy ${_SERVICE_NAME} --image gcr.io/$PROJECT_ID/${_IMAGE_NAME} \
+           --region ${_REGION} \
+           --platform managed \
+           --allow-unauthenticated \
+           --update-env-vars OPENAI_API_KEY=$$OPENAI_API_KEY,DISCORD_URL=$$DISCORD_URL,GCS_BUCKET=${_GCS_BUCKET}
     secretEnv: ["OPENAI_API_KEY", "DISCORD_URL"]
 
 availableSecrets:

@@ -214,6 +214,7 @@ class MessageVectorStore:
             self.upload_directory(self.bucket_client, directory_path, local_dir)
 
     def auto_save_vectorstore_gcs(self, bucket_name, dir_path):
+        print(f"Auto-saving vector store {dir_path} to {bucket_name}")
         atexit.register(self.save_vectorstore_gcs, bucket_name, dir_path)
 
 
