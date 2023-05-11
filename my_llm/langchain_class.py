@@ -26,7 +26,6 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
         self.memory_namespace = memory_namespace
         self.messages = []
         self.mem_path = None
-        self.vector_db = None
         self.pubsub_manager = PubSubManager(memory_namespace, pubsub_topic=pubsub_topic)
         self.vectorstore_manager = MessageVectorStore(memory_namespace, self.messages, embedding=OpenAIEmbeddings())
 
@@ -57,16 +56,23 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
             return o.isoformat()
         raise TypeError("Object of type datetime is not JSON serializable")
     
-    def _write_to_disk(self, filepath: str, data):
+    def _write_to_disk(self, data, verbose:bool =False):
+        filepath = self.get_mem_path()
+        if not filepath:
+            return None
+        
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
 
+        data = data.dict()
+
         # Append the new data as a JSON line
-        #print(f"Data to be written: {data}")
+        if verbose:
+            print(f"Writing to {filepath} with data: {data}")
         with open(filepath, 'a') as f:
             json.dump(data, f, default=self._datetime_converter)
             f.write('\n')
 
-    def _route_message(self, timed_message, verbose=False):
+    def _route_message(self, timed_message, verbose: bool=False):
 
         metadata = timed_message.metadata if timed_message.metadata is not None else {}
         metadata["role"] = timed_message.role
@@ -75,13 +81,11 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
 
         # write to disk
         if self.memory_namespace:
-            mem_path = self.get_mem_path()
-            if mem_path:
-                self._write_to_disk(mem_path, timed_message.dict())
+            self._write_to_disk(timed_message, verbose=verbose)
         
         # Publish to Google Pub/Sub
         if self.pubsub_manager:
-            self.pubsub_manager.publish_message(timed_message)
+            self.pubsub_manager.publish_message(timed_message, verbose=verbose)
 
         # save to vectorstore
         if self.vectorstore_manager:
@@ -243,6 +247,7 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
             return None
 
         # Load a QA chain
+        # TODO: Use ConversationalRetrievalChain
         qa = RetrievalQA.from_chain_type(
             llm=llm, 
             chain_type="stuff",

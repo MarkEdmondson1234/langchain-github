@@ -2,7 +2,6 @@ from google.cloud import pubsub_v1
 from google.api_core.exceptions import NotFound
 from google.auth import default
 
-import datetime
 import json
 import os
 
@@ -51,12 +50,18 @@ class PubSubManager:
         except Exception as e:
             print(f"Failed to publish message: {e}")
 
-    def publish_message(self, message):
+    def publish_message(self, message, verbose=False):
         """Publishes the given data to Google Pub/Sub."""
+
+        if verbose or self.verbose:
+            verbose = True
+        
         if self.publisher and self.pubsub_topic:
-            #print("Message type:", type(message))
+            if verbose:
+                print("Message type:", type(message))
             message_json = json.dumps(message, default=lambda obj: obj.to_dict())
-            #print(f"pubsub_message_json: {message_json}")
+            if verbose:
+                print(f"pubsub_message_json: {message_json}")
             message_bytes = message_json.encode('utf-8')
             attr = {"namespace": str(self.memory_namespace)}
             future = self.publisher.publish(self.pubsub_topic, message_bytes, attrs=json.dumps(attr))
