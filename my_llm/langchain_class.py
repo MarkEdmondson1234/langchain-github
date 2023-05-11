@@ -18,6 +18,9 @@ from my_llm.pubsub_manager import PubSubManager
 from my_llm.vectorstore import MessageVectorStore
 from my_llm.timed_chat_message import TimedChatMessage
 
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 class PubSubChatMessageHistory(BaseChatMessageHistory):
 
@@ -74,13 +77,14 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
 
         # Append the new data as a JSON line
         if verbose:
-            print(f"Writing to {filepath} with data: {data}")
+            print(f"Writing to {filepath} with data")
         with open(filepath, 'a') as f:
             json.dump(data, f, default=self._datetime_converter)
             f.write('\n')
 
     def _route_message(self, timed_message, verbose: bool=False):
 
+        logging.info('_route_message')
         metadata = timed_message.metadata if timed_message.metadata is not None else {}
         metadata["role"] = timed_message.role
         metadata["timestamp"] = str(timed_message.timestamp)
@@ -88,27 +92,32 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
 
         # write to disk
         if self.memory_namespace:
+            logging.info("_route_message: write to disk")
             self._write_to_disk(timed_message, verbose=verbose)
         
         # Publish to Google Pub/Sub
         if self.pubsub_manager:
+            logging.info("_route_message: pubsub")
             self.pubsub_manager.publish_message(timed_message, verbose=verbose)
 
         # save to vectorstore
         if self.vectorstore_manager:
-            self.vectorstore_manager.save_vectorstore_memory([doc], verbose=verbose)
+            logging.info("_route_message: vectorstore")
+            self.save_vectorstore_memory([doc], verbose=verbose)
             self.vectorstore_manager.messages.append(timed_message)
     
 
     def save_vectorstore_memory(self, docs, verbose=False):
         if not self.vectorstore_manager:
             print("No vectorstore found to save to")
-        
+            return
+        logging.info("Calling vectorstore_manager.save_vectorstore_memory")
         self.vectorstore_manager.save_vectorstore_memory(docs, verbose=verbose)
 
     def load_vectorstore_memory(self, verbose=False):
         if not self.vectorstore_manager:
             print("No vectorstore found to load")
+            return
 
         return self.vectorstore_manager.load_vectorstore_memory(verbose=verbose)
 

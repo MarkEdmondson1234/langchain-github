@@ -4,6 +4,9 @@ from google.auth import default
 
 import json
 import os
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 class PubSubManager:
     """
@@ -57,11 +60,9 @@ class PubSubManager:
             verbose = True
         
         if self.publisher and self.pubsub_topic:
-            if verbose:
-                print("Message type:", type(message))
+            #logging.debug("Message type:", type(message))
             message_json = json.dumps(message, default=lambda obj: obj.to_dict())
-            if verbose:
-                print(f"pubsub_message_json: {message_json}")
+            #logging.debug(f"pubsub_message_json: {message_json}")
             message_bytes = message_json.encode('utf-8')
             attr = {"namespace": str(self.memory_namespace)}
             future = self.publisher.publish(self.pubsub_topic, message_bytes, attrs=json.dumps(attr))
