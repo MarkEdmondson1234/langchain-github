@@ -15,7 +15,9 @@ steps:
 
   # Deploy the image to Cloud Run
   - name: "gcr.io/cloud-builders/gcloud"
+    entrypoint:
     args:
+      - "gcloud"
       - "run"
       - "deploy"
       - "${_SERVICE_NAME}"
@@ -27,7 +29,7 @@ steps:
       - "managed"
       - "--allow-unauthenticated"
       - "--update-env-vars"
-      - "OPENAI_API_KEY=$OPENAI_API_KEY,DISCORD_URL=$DISCORD_URL,GCS_BUCKET=${_GCS_BUCKET}"
+      - "OPENAI_API_KEY=$$OPENAI_API_KEY,DISCORD_URL=$$DISCORD_URL,GCS_BUCKET=${_GCS_BUCKET}"
     secretEnv: ["OPENAI_API_KEY", "DISCORD_URL"]
 
 availableSecrets:
