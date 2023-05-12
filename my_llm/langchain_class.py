@@ -290,8 +290,10 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
         if result.get('source_documents') is not None:
             source_metadata = []
             for doc in result.get('source_documents'):
+                # if this isn't done we get a recursive big blob for 'sources'
+                filtered_metadata = {key: value for key, value in doc.metadata.items() if key != 'sources'}
                 p = {"page_content": doc.page_content, 
-                     "page_metadata": doc.metadata}
+                     "page_metadata": filtered_metadata}
                 source_metadata.append(p)
 
             metadata = {"task": "QnA", "sources":json.dumps(source_metadata)}

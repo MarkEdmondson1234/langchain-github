@@ -31,6 +31,8 @@ Run locally:
 python3 ./webapp/app.py   
 ```
 
+Give its service account running the Cloud Run Cloud Storage read/write permissions if you supply the _GCS_BUCKET
+
 ## Discord bot
 
 can only accept inputs and outputs
