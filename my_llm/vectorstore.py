@@ -14,6 +14,8 @@ from google.cloud import storage
 
 import logging
 import traceback
+import time
+import threading
 
 logging.basicConfig(level=logging.INFO)
 
@@ -32,6 +34,7 @@ class MessageVectorStore:
         self.embedding = embedding
         self.bucket_name = bucket_name
         self.bucket_client = None
+        self.sync_started = False
 
         if self.bucket_name:
             self._get_set_bucket_client(self.bucket_name)
@@ -79,11 +82,18 @@ class MessageVectorStore:
         for chunk in source_chunks:
             logging.info(chunk.page_content[:30].strip() + "...")
             logging.info(chunk.metadata.keys())
-        
-        if self.bucket_name:
-            self.save_vectorstore_gcs(self.bucket_name)
 
         return ids
+
+    def start_periodic_sync(self, sync_interval=60):
+        def periodic_sync():
+            while True:
+                time.sleep(sync_interval)
+                if self.bucket_name:
+                    self.save_vectorstore_gcs(self.bucket_name)
+
+        sync_thread = threading.Thread(target=periodic_sync, daemon=True)
+        sync_thread.start()
 
     def load_vectorstore_memory(self, embedding=None, verbose=False):
 
@@ -109,8 +119,9 @@ class MessageVectorStore:
             
         self.vector_db = vector_db
 
+        logging.info("Loaded vectorstore")
         if verbose:
-            logging.info("Loaded vectorstore")
+            print("Loaded vectorstore")
 
         return vector_db
     
@@ -176,6 +187,9 @@ class MessageVectorStore:
             client = storage.Client()
             try:
                 self.bucket_client = client.get_bucket(bucket_name)
+                if not self.sync_started:
+                    self.start_periodic_sync(sync_interval=60)
+                    self.sync_started = True
             except NotFound:
                 logging.info(f"bucket {bucket_name} not found ")
                 traceback.print_exc()

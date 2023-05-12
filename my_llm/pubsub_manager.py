@@ -24,7 +24,7 @@ class PubSubManager:
         self.project_id = project_id or os.environ.get('GOOGLE_CLOUD_PROJECT')
 
         if self.project_id:
-            print(f"Project ID: {self.project_id}")
+            logging.info(f"Project ID: {self.project_id}")
             # Create the Pub/Sub topic based on the project ID and memory_namespace
             self.publisher = pubsub_v1.PublisherClient()
             self.pubsub_topic = pubsub_topic or f"projects/{self.project_id}/topics/chat-messages-{memory_namespace}"
@@ -42,6 +42,7 @@ class PubSubManager:
         except NotFound:
             # If the topic does not exist, create it
             self.publisher.create_topic(request={"name": self.pubsub_topic})
+            logging.info(f"Created Pub/Sub topic: {self.pubsub_topic}")
             if self.verbose:
                 print(f"Created Pub/Sub topic: {self.pubsub_topic}")
 
@@ -49,9 +50,9 @@ class PubSubManager:
     def _callback(future):
         try:
             message_id = future.result()
-            print(f"Published message with ID: {message_id}")
+            logging.info(f"Published message with ID: {message_id}")
         except Exception as e:
-            print(f"Failed to publish message: {e}")
+            logging.error(f"Failed to publish message: {e}")
 
     def publish_message(self, message, verbose=False):
         """Publishes the given data to Google Pub/Sub."""
@@ -60,9 +61,9 @@ class PubSubManager:
             verbose = True
         
         if self.publisher and self.pubsub_topic:
-            #logging.debug("Message type:", type(message))
+            logging.debug("Message type:", type(message))
             message_json = json.dumps(message, default=lambda obj: obj.to_dict())
-            #logging.debug(f"pubsub_message_json: {message_json}")
+            logging.debug(f"pubsub_message_json: {message_json}")
             message_bytes = message_json.encode('utf-8')
             attr = {"namespace": str(self.memory_namespace)}
             future = self.publisher.publish(self.pubsub_topic, message_bytes, attrs=json.dumps(attr))
