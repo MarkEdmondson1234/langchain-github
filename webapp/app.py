@@ -6,6 +6,7 @@ sys.path.append(parent_dir)
 # app.py
 from flask import Flask, render_template, request, jsonify
 from qna import read_repo
+import logging
 
 app = Flask(__name__)
 
@@ -17,26 +18,46 @@ def index():
 def reindex():
     return render_template('reindex.html')
 
-@app.route('/process_input', methods=['POST'])
-def process_input():
-    data = request.get_json()
-    user_input  = data.get('user_input')
-    repo        = data.get('repo', None)
-    reindex     = data.get('reindex', False)
-    ext         = data.get('ext', '.py,.md')
-    ignore      = data.get('ignore', 'env/')
-    resummarise = data.get('resummarise', False)
+def send_document_to_index(uploaded_files, bucket_name):
+    summaries = []
+    os.makedirs('temp', exist_ok=True)
+    for file in uploaded_files:
+        # Save the file temporarily
+        safe_filepath = os.path.abspath(os.path.join('temp', file.filename))
+        logging.info(f'Saving file: {safe_filepath}')
+        file.save(safe_filepath)
+        summary = read_repo.summarise_single_file(safe_filepath, bucket_name, verbose=True)
+        summaries.append(summary)
+        os.remove(safe_filepath)
+    return summaries
+
+@app.route('/process_files', methods=['POST'])
+def process_files():
+    
     bucket_name = os.getenv('GCS_BUCKET', None)
 
-    print(f'Request data: {data}')
+    uploaded_files = request.files.getlist('files')
+    if len(uploaded_files) > 0:
+        logging.info('Upload form data')
+        # we add document to the index
+        summaries = send_document_to_index(uploaded_files, bucket_name)
+        return jsonify({"summaries": summaries})
+    
+    return jsonify({"summaries": ["No files were uploaded"]})
 
+@app.route('/process_input', methods=['POST'])
+def process_input():
+    
+    bucket_name = os.getenv('GCS_BUCKET', None)
+
+    # json input
+    data = request.get_json()
+    logging.info(f'Request data: {data}')
+
+    user_input  = data.get('user_input', '')
+    # we ask the bot a question about the documents in the vectorstore
     bot_output = read_repo.process_input(
-        user_input=user_input, 
-        repo=repo, 
-        reindex=reindex, 
-        ext=ext, 
-        ignore=ignore, 
-        resummarise=resummarise, 
+        user_input=user_input,
         verbose=True,
         bucket_name=bucket_name)
     
@@ -47,6 +68,7 @@ def discord():
     data = request.get_json()
     user_input = data['content']  # Extract user input from the payload
     attachments = data.get('attachments', [])
+    bucket_name = os.getenv('GCS_BUCKET', None)
 
     # Handle file attachments
     files = []
@@ -62,10 +84,7 @@ def discord():
     
     if len(files) > 0:
         # send the file as a my_llm.langchain_class.PubSubChatMessageHistory
-        pass
-
-    # Process the input and get the bot's response
-    bot_output = read_repo.process_input(user_input)
+        bot_output = send_document_to_index(files, bucket_name)
 
     # Format the response payload
     response_payload = {

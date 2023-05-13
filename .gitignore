@@ -156,3 +156,4 @@ chroma/
 chroma-collections.parquet
 chroma-embeddings.parquet
 index/
+temp/

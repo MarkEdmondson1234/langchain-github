@@ -62,7 +62,7 @@ Some examples on how the LLM output ends in PubSub from indexing the langchain r
 
 To run the examples you could do this (I run off MacOS)
 
-```
+```bash
 python3 -m venv env
 source env/bin/activate
 ./env/bin/python3 -m pip install -r requirements.txt

@@ -59,14 +59,8 @@ def get_repo_docs(repo_path, extension, memory, ignore=None, resummarise=False, 
             
             i += 1
 			# Read the content of the file
-            try:
-                with open (md_file, "r") as file:
-                    rel_path = md_file.relative_to(repo)
-                    metadata = {"source": str(rel_path)}
-                    #print(metadata)
-                    yield Document(page_content=file.read(), metadata=metadata)
-            except Exception as e:
-                print(f"Error reading {md_file}: " + str(e))
+            document = next(read_file_to_document(md_file, repo))
+            yield document
             
             if verbose:
                 print(f"Read {i} files so far and ignored {j}: total: {num_matched_files}")
@@ -74,6 +68,19 @@ def get_repo_docs(repo_path, extension, memory, ignore=None, resummarise=False, 
         print(f"Read {i} and ignored {j} {ext} files.")
         
     print("Read all files")
+
+def read_file_to_document(md_file, repo, metadata: dict = None):
+    # Read the content of the file
+    try:
+        with open (md_file, "r") as file:
+            rel_path = md_file.relative_to(repo)
+            the_metadata = {"source": str(rel_path)}
+            if metadata is not None:
+                the_metadata = {**the_metadata, **metadata}
+            #print(metadata)
+            yield Document(page_content=file.read(), metadata=the_metadata)
+    except Exception as e:
+        print(f"Error reading {md_file}: " + str(e))
 
 # Function to summarise code from the OpenAI API     
 def generate_code_summary(a_file, memory, resummarise: bool=False, verbose: bool=False):
@@ -139,25 +146,31 @@ The code to summarise is here:
     
         my_llm.save_to_file(new_file_name, summary + '\n\n', type = "a")
     
-    return
+    return pathlib.Path(new_file_name)
     
 # Get source chunks from a repository
 def get_source_docs(repo_path, extension, memory, ignore, resummarise, verbose):
     source_chunks = []
 
-    splitter = CharacterTextSplitter(separator=" ", chunk_size=1024, chunk_overlap=0)
     for source in get_repo_docs(repo_path, 
                                 extension=extension, 
                                 memory=memory, 
                                 ignore=ignore, 
                                 resummarise=resummarise,
                                 verbose=verbose):
-        if extension == ".py":
-            splitter = PythonCodeTextSplitter()
+        
+        splitter = choose_splitter(extension)
         for chunk in splitter.split_text(source.page_content):
             source_chunks.append(Document(page_content=chunk, metadata=source.metadata))
 
     return source_chunks
+
+def choose_splitter(extension):
+    splitter = CharacterTextSplitter(separator=" ", chunk_size=1024, chunk_overlap=0)
+    if extension == ".py":
+        splitter = PythonCodeTextSplitter()
+    
+    return splitter
 
 def setup_memory(config):
 
@@ -181,6 +194,66 @@ def setup_memory(config):
         memory.save_vectorstore_memory(source_chunks, verbose=config['verbose'])
 
     return memory 
+
+
+def document_to_dict(document):
+    return {
+        'page_content': document.page_content,
+        'metadata': document.metadata,
+    }
+
+def process_input(user_input: str, 
+                  verbose: bool =True,
+                  bucket_name: str = None):
+
+    # more only needed if you need to recreate the vectorstore which we wont with web app
+    config = {
+        'reindex': False,
+        'bucket_name': bucket_name
+    }
+        
+    if verbose:
+        print(f"user_input: {user_input}")
+        print(f"process_input config: {config}")
+    
+    memory = setup_memory(config)
+    answer = memory.question_memory(user_input, llm=chat, verbose=verbose)
+
+    response = {'result': answer['result']}
+    if answer.get('source_documents') is not None:
+        source_documents = [document_to_dict(doc) for doc in answer['source_documents']]
+        response['source_documents'] = source_documents
+
+    return response
+
+def summarise_single_file(filename, bucket_name, verbose=False):
+    config = {
+        'reindex': False, # as we will trigger file summary directly
+        'bucket_name': bucket_name
+    }
+
+    filename = pathlib.Path(filename)
+
+    memory = setup_memory(config)
+
+    summary_filename = generate_code_summary(filename, 
+                                            memory, 
+                                            resummarise=True, 
+                                            verbose=verbose)
+    
+
+    repo = summary_filename.parent
+    document = next(read_file_to_document(summary_filename, repo))
+    source_chunks = []
+    splitter = choose_splitter(summary_filename.suffix)
+    for chunk in splitter.split_text(document.page_content):
+        source_chunks.append(Document(page_content=chunk, metadata=document.metadata))
+        memory.add_user_message(chunk, metadata={"task": "singlefile vectorstore load",
+                                                 "source": str(filename)})
+
+    return document.page_content
+    
+    
 
 def main(config):
 
@@ -210,46 +283,6 @@ def main(config):
              print('Sorry')
 
         print('\033[m')
-
-def document_to_dict(document):
-    return {
-        'page_content': document.page_content,
-        'metadata': document.metadata,
-    }
-
-def process_input(user_input: str, 
-                  repo: str=None, 
-                  reindex: bool =False, 
-                  ext: str='.py,.md', 
-                  ignore: str='env/', 
-                  resummarise: bool =False, 
-                  verbose: bool =True,
-                  bucket_name: str = None):
-
-    # this is only needed if you need to recreate the vectorstore
-    config = {
-        'repo': repo,
-        'reindex': reindex,
-        'ext': ext,
-        'ignore': ignore,
-        'resummarise': resummarise,
-        'verbose': verbose,
-        'bucket_name': bucket_name
-    }
-
-    if verbose:
-        print(f"user_input: {user_input}")
-        print(f"process_input config: {config}")
-    
-    memory = setup_memory(config)
-    answer = memory.question_memory(user_input, llm=chat, verbose=verbose)
-
-    response = {'result': answer['result']}
-    if answer.get('source_documents') is not None:
-        source_documents = [document_to_dict(doc) for doc in answer['source_documents']]
-        response['source_documents'] = source_documents
-
-    return response
 
 
 if __name__ == "__main__":
