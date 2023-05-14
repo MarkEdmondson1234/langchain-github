@@ -9,3 +9,7 @@ google-cloud-pubsub
 google-auth
 flask
 google-cloud-storage
+unstructured[local-inference]
+tabulate
+pdf2image
+pytesseract

@@ -26,6 +26,13 @@ def send_document_to_index(uploaded_files, bucket_name):
         safe_filepath = os.path.abspath(os.path.join('temp', file.filename))
         logging.info(f'Saving file: {safe_filepath}')
         file.save(safe_filepath)
+
+        # the original file split into chunks if necessary
+        chunks = read_repo.add_single_file(safe_filepath, bucket_name, verbose=True)
+        for chunk in chunks:
+            summaries.append(chunk)
+        
+        # a summary of the file
         summary = read_repo.summarise_single_file(safe_filepath, bucket_name, verbose=True)
         summaries.append(summary)
         os.remove(safe_filepath)
@@ -35,6 +42,7 @@ def send_document_to_index(uploaded_files, bucket_name):
 def process_files():
     
     bucket_name = os.getenv('GCS_BUCKET', None)
+    logging.info(f"bucket: {bucket_name}")
 
     uploaded_files = request.files.getlist('files')
     if len(uploaded_files) > 0:
@@ -60,6 +68,8 @@ def process_input():
         user_input=user_input,
         verbose=True,
         bucket_name=bucket_name)
+    
+    logging.info(f"bot_output: {bot_output}")
     
     return bot_output
 

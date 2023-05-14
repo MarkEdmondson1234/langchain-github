@@ -24,12 +24,17 @@ logging.basicConfig(level=logging.INFO)
 
 class PubSubChatMessageHistory(BaseChatMessageHistory):
 
-    def __init__(self, memory_namespace: str, pubsub_topic: str = None, bucket_name: str = None):
+    def __init__(self, 
+                 memory_namespace: str, 
+                 pubsub_topic: str = None, 
+                 bucket_name: str = None,
+                 embedding = None):
         super().__init__()
         self.memory_namespace = memory_namespace
         self.messages = []
         self.mem_path = None
         self.pubsub_manager = PubSubManager(memory_namespace, pubsub_topic=pubsub_topic)
+        self.embedding = embedding if embedding is not None else OpenAIEmbeddings()
         self.vectorstore_manager = MessageVectorStore(
             memory_namespace, 
             messages = self.messages, 
@@ -88,6 +93,7 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
         metadata = timed_message.metadata if timed_message.metadata is not None else {}
         metadata["role"] = timed_message.role
         metadata["timestamp"] = str(timed_message.timestamp)
+        metadata["embedding"] = self.embedding.embed_query(timed_message.content) if self.embedding is not None else ""
         doc = Document(page_content=timed_message.content, metadata=metadata)
 
         # write to disk
@@ -103,6 +109,8 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
         # save to vectorstore
         if self.vectorstore_manager:
             logging.info("_route_message: vectorstore")
+            metadata.pop("embedding")
+            doc = Document(page_content=timed_message.content, metadata=metadata)
             self.save_vectorstore_memory([doc], verbose=verbose)
             self.vectorstore_manager.messages.append(timed_message)
     
@@ -272,8 +280,7 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
 
         docs = db.similarity_search(question)
         if len(docs) == 0:
-            print("No documents found similar to your question")
-            return None
+            logging.info("No documents found similar to your question")
 
         # Load a QA chain
         # TODO: Use ConversationalRetrievalChain

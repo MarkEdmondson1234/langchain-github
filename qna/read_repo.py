@@ -1,6 +1,6 @@
 #!/Users/mark/dev/ml/langchain/read_github/langchain_github/env/bin/python
 # change above to the location of your local Python venv installation
-import sys, os
+import sys, os, shutil
 
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(parent_dir)
@@ -8,12 +8,12 @@ sys.path.append(parent_dir)
 import pathlib
 
 from langchain.docstore.document import Document
-from langchain.text_splitter import CharacterTextSplitter
-from langchain.text_splitter import PythonCodeTextSplitter
+import langchain.text_splitter as text_splitter
 from langchain.chat_models import ChatOpenAI
 from my_llm import standards as my_llm
 from my_llm.langchain_class import PubSubChatMessageHistory
 from langchain import PromptTemplate
+from langchain.document_loaders.unstructured import UnstructuredFileLoader
 
 chat = ChatOpenAI(temperature=0.4)
 
@@ -59,8 +59,7 @@ def get_repo_docs(repo_path, extension, memory, ignore=None, resummarise=False, 
             
             i += 1
 			# Read the content of the file
-            document = next(read_file_to_document(md_file, repo))
-            yield document
+            yield read_file_to_document(md_file)
             
             if verbose:
                 print(f"Read {i} files so far and ignored {j}: total: {num_matched_files}")
@@ -69,18 +68,40 @@ def get_repo_docs(repo_path, extension, memory, ignore=None, resummarise=False, 
         
     print("Read all files")
 
-def read_file_to_document(md_file, repo, metadata: dict = None):
-    # Read the content of the file
+def read_file_to_document(md_file, split=False, metadata: dict = None):
     try:
-        with open (md_file, "r") as file:
-            rel_path = md_file.relative_to(repo)
-            the_metadata = {"source": str(rel_path)}
-            if metadata is not None:
-                the_metadata = {**the_metadata, **metadata}
-            #print(metadata)
-            yield Document(page_content=file.read(), metadata=the_metadata)
-    except Exception as e:
-        print(f"Error reading {md_file}: " + str(e))
+        loader = UnstructuredFileLoader(md_file)
+        if split:
+            # only supported for some file types
+            docs = loader.load_and_split()
+        else:
+            docs = loader.load()
+    except ValueError as e:
+        if "file type is not supported in partition" in str(e):
+            # Convert the file to .txt and try again
+            txt_file = convert_to_txt(md_file)
+            loader = UnstructuredFileLoader(txt_file)
+            if split:
+                docs = loader.load_and_split()
+            else:
+                docs = loader.load()
+            os.remove(txt_file)  # Remove the temporary .txt file after processing
+        else:
+            raise e
+
+    for doc in docs:
+        if metadata is not None:
+            doc.metadata.update(metadata)
+
+    return docs
+
+def convert_to_txt(file_path):
+    file_dir, file_name = os.path.split(file_path)
+    file_base, file_ext = os.path.splitext(file_name)
+    txt_file = os.path.join(file_dir, f"{file_base}.txt")
+    shutil.copyfile(file_path, txt_file)
+    return txt_file
+
 
 # Function to summarise code from the OpenAI API     
 def generate_code_summary(a_file, memory, resummarise: bool=False, verbose: bool=False):
@@ -103,10 +124,8 @@ def generate_code_summary(a_file, memory, resummarise: bool=False, verbose: bool
     print(f"Requesting code summary for {a_file}   ")
     print("================================================")
 
-    source_chunks = []
-    splitter = CharacterTextSplitter()
-    for chunk in splitter.split_text(code):
-        source_chunks.append(Document(page_content=chunk, metadata={"source": os.path.abspath(a_file)}))    
+    document = Document(page_content=code, metadata = {"source": os.path.abspath(a_file)})
+    source_chunks = chunk_doc_to_docs([document], a_file.suffix)  
 
     # create prompt to pass in to LLM
     template = """
@@ -166,9 +185,11 @@ def get_source_docs(repo_path, extension, memory, ignore, resummarise, verbose):
     return source_chunks
 
 def choose_splitter(extension):
-    splitter = CharacterTextSplitter(separator=" ", chunk_size=1024, chunk_overlap=0)
+    splitter = text_splitter.RecursiveCharacterTextSplitter(chunk_size=1024, chunk_overlap=0)
     if extension == ".py":
-        splitter = PythonCodeTextSplitter()
+        splitter = text_splitter.PythonCodeTextSplitter()
+    elif extension == ".md":
+        splitter = text_splitter.MarkdownTextSplitter()
     
     return splitter
 
@@ -219,12 +240,35 @@ def process_input(user_input: str,
     memory = setup_memory(config)
     answer = memory.question_memory(user_input, llm=chat, verbose=verbose)
 
-    response = {'result': answer['result']}
-    if answer.get('source_documents') is not None:
-        source_documents = [document_to_dict(doc) for doc in answer['source_documents']]
-        response['source_documents'] = source_documents
+    response = {'result': 'No answer found'}
+    if answer is not None:
+        response = {'result': answer['result']}
+        if answer.get('source_documents') is not None:
+            source_documents = [document_to_dict(doc) for doc in answer['source_documents']]
+            response['source_documents'] = source_documents
 
     return response
+
+def add_single_file(filename, bucket_name, verbose=False):
+    config = {
+        'reindex': False, # as we will trigger file summary directly
+        'bucket_name': bucket_name
+    }
+    filename = pathlib.Path(filename)
+    docs = read_file_to_document(filename)
+    chunks = chunk_doc_to_docs(docs, filename.suffix)
+
+    memory = setup_memory(config)
+
+    docs_output = []
+    for chunk in chunks:
+        memory.add_user_message(chunk.page_content, 
+                                metadata={"task": "singlefile load original",
+                                          "source": str(filename)})
+        docs_output.append(chunk.page_content)
+    
+    return docs_output
+
 
 def summarise_single_file(filename, bucket_name, verbose=False):
     config = {
@@ -242,16 +286,27 @@ def summarise_single_file(filename, bucket_name, verbose=False):
                                             verbose=verbose)
     
 
-    repo = summary_filename.parent
-    document = next(read_file_to_document(summary_filename, repo))
-    source_chunks = []
-    splitter = choose_splitter(summary_filename.suffix)
-    for chunk in splitter.split_text(document.page_content):
-        source_chunks.append(Document(page_content=chunk, metadata=document.metadata))
-        memory.add_user_message(chunk, metadata={"task": "singlefile vectorstore load",
-                                                 "source": str(filename)})
+    documents = read_file_to_document(summary_filename)
+    chunks = chunk_doc_to_docs(documents, filename.suffix)
 
-    return document.page_content
+    output_content = ""
+    for chunk in chunks:
+        memory.add_user_message(chunk.page_content, 
+                                metadata={"task": "singlefile load summary",
+                                          "source": str(filename)})
+        output_content += chunk.page_content + "\n\n"
+
+    return output_content
+
+def chunk_doc_to_docs(documents: list, extension: str = ".md"):
+    """Turns a Document object into a list of many Document chunks"""
+    for document in documents:
+        source_chunks = []
+        splitter = choose_splitter(extension)
+        for chunk in splitter.split_text(document.page_content):
+            source_chunks.append(Document(page_content=chunk, metadata=document.metadata))
+
+        return source_chunks  
     
     
 
