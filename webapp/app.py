@@ -26,16 +26,15 @@ def send_document_to_index(uploaded_files, bucket_name):
         safe_filepath = os.path.abspath(os.path.join('temp', file.filename))
         logging.info(f'Saving file: {safe_filepath}')
         file.save(safe_filepath)
-
-        # the original file split into chunks if necessary
-        chunks = read_repo.add_single_file(safe_filepath, bucket_name, verbose=True)
-        for chunk in chunks:
-            summaries.append(chunk)
-        
-        # a summary of the file
-        summary = read_repo.summarise_single_file(safe_filepath, bucket_name, verbose=True)
-        summaries.append(summary)
-        os.remove(safe_filepath)
+        try:
+            # the original file split into chunks if necessary
+            chunks = read_repo.add_single_file(safe_filepath, bucket_name, verbose=True)
+            
+            # a summary of the file
+            summary = read_repo.summarise_single_file(safe_filepath, bucket_name, verbose=True)
+            summaries.append(summary)
+        finally:
+            os.remove(safe_filepath)
     return summaries
 
 @app.route('/process_files', methods=['POST'])
@@ -88,9 +87,6 @@ def discord():
         file_name = attachment['filename']
         response = requests.get(file_url)
         open(file_name, 'wb').write(response.content)
-
-        # Add the file to the list of files to be sent back
-        files.append(('files', (file_name, open(file_name, 'rb'))))
     
     if len(files) > 0:
         # send the file as a my_llm.langchain_class.PubSubChatMessageHistory
