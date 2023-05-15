@@ -58,6 +58,14 @@ Some examples on how the LLM output ends in PubSub from indexing the langchain r
 
 ![](img/langchain_index_langchain_bigquery.png)
 
+## Data architecture for LLMs
+
+My experiments in this repo have helped my identify the key components a production LLM application could hold.  I'm under active investigation on what tools would best help serve these roles.  Vector databases are key if you want to insert your own context into the prompts, as well as the type of model you are using to determine how many tokens you can include in the prompt, as well as of course its accuracy.
+
+Agents and tools are an exciting development on top of LLM output, where you start to parse out templated responses to trigger new workflows, including creating new prompts to run iteratively through the LLM.
+
+![](img/llm-architecture.png)
+
 ## global setup
 
 To run the examples you could do this (I run off MacOS)
