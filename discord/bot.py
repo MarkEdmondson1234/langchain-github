@@ -46,7 +46,7 @@ async def on_message(message):
                         source_message = f"Source: {source.get('page_content')}\nMetadata: {source.get('metadata')}"
                         await message.channel.send(source_message)
                     # Edit the thinking message to show the reply
-                    await thinking_message.edit(content=reply_content)
+                    await message.channel.edit(content=reply_content)
                 else:
                     # Edit the thinking message to show an error
                     await thinking_message.edit(content="Error in processing message.")
