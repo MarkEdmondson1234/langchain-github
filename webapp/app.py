@@ -1,4 +1,4 @@
-import sys, os, requests
+import sys, os, requests, json
 
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(parent_dir)
@@ -90,8 +90,26 @@ def discord_message():
         bucket_name=bucket_name)
     
     logging.info(f"bot_output: {bot_output}")
-    
-    return bot_output
+
+    # Ensure the message doesn't exceed Discord's character limit
+    result = bot_output.get('result', '')
+    source_documents = bot_output.get('source_documents', [])
+
+    # Convert result and source_documents to a string representation to count characters
+    result_str = json.dumps(result)
+    source_documents_str = json.dumps(source_documents)
+
+    total_length = len(result_str) + len(source_documents_str)
+    if total_length > 4000:
+        # Remove documents from the end until the total length is under 4000 characters
+        while total_length > 4000 and source_documents:
+            source_documents.pop()
+            source_documents_str = json.dumps(source_documents)
+            total_length = len(result_str) + len(source_documents_str)
+
+        bot_output['source_documents'] = source_documents
+
+    return jsonify(bot_output)
 
 @app.route('/discord/files', methods=['POST'])
 def discord_files():
