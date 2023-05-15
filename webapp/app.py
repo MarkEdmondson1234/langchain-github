@@ -18,24 +18,17 @@ def index():
 def reindex():
     return render_template('reindex.html')
 
-def send_document_to_index(uploaded_files, bucket_name):
-    summaries = []
-    os.makedirs('temp', exist_ok=True)
-    for file in uploaded_files:
-        # Save the file temporarily
-        safe_filepath = os.path.abspath(os.path.join('temp', file.filename))
-        logging.info(f'Saving file: {safe_filepath}')
-        file.save(safe_filepath)
-        try:
-            # the original file split into chunks if necessary
-            chunks = read_repo.add_single_file(safe_filepath, bucket_name, verbose=True)
-            
-            # a summary of the file
-            summary = read_repo.summarise_single_file(safe_filepath, bucket_name, verbose=True)
-            summaries.append(summary)
-        finally:
-            os.remove(safe_filepath)
-    return summaries
+def send_document_to_index(safe_filepath:str, bucket_name):
+
+    try:
+        # the original file split into chunks if necessary
+        chunks = read_repo.add_single_file(safe_filepath, bucket_name, verbose=True)
+        # a summary of the file
+        summary = read_repo.summarise_single_file(safe_filepath, bucket_name, verbose=True)
+    finally:
+        logging.info(f"Removing {safe_filepath}")
+        os.remove(safe_filepath)
+    return summary
 
 @app.route('/process_files', methods=['POST'])
 def process_files():
@@ -44,10 +37,22 @@ def process_files():
     logging.info(f"bucket: {bucket_name}")
 
     uploaded_files = request.files.getlist('files')
+    os.makedirs('temp', exist_ok=True)
+    summaries = []
     if len(uploaded_files) > 0:
         logging.info('Upload form data')
-        # we add document to the index
-        summaries = send_document_to_index(uploaded_files, bucket_name)
+        for file in uploaded_files:
+            logging.info(f'Uploading {file.filename}')
+            
+            # Save the file temporarily
+            safe_filepath = os.path.abspath(os.path.join('temp', file.filename))
+            logging.info(f'Saving file: {safe_filepath}')
+            file.save(safe_filepath)
+
+            # we add document to the index
+            summary = send_document_to_index(safe_filepath, bucket_name)
+            summaries.append(summary)
+
         return jsonify({"summaries": summaries})
     
     return jsonify({"summaries": ["No files were uploaded"]})
@@ -95,29 +100,22 @@ def discord_files():
     bucket_name = os.getenv('GCS_BUCKET', None)
 
     # Handle file attachments
-    files = []
+    bot_output = []
     for attachment in attachments:
         # Download the file and store it temporarily
         file_url = attachment['url']
         file_name = attachment['filename']
         response = requests.get(file_url)
         open(file_name, 'wb').write(response.content)
-        files.append(file_name)
-    
-    if len(files) > 0:
-        # send the file as a my_llm.langchain_class.PubSubChatMessageHistory
-        bot_output = send_document_to_index(files, bucket_name)
+        summary = send_document_to_index(file_name, bucket_name)
+        bot_output.append(summary)
 
     # Format the response payload
     response_payload = {
-        "content": bot_output
+        "summaries": bot_output
     }
 
-    # Send the response to the Discord webhook URL
-    discord_webhook_url = os.getenv('DISCORD_URL')
-    requests.post(discord_webhook_url, json=response_payload)
-
-    return '', 204
+    return response_payload, 200
 
 @app.route('/slack', methods=['POST'])
 def slack():

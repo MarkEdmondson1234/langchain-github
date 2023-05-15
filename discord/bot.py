@@ -36,7 +36,7 @@ async def on_message(message):
 
         async with aiohttp.ClientSession() as session:
             async with session.post(flask_app_url, json=payload) as response:
-                print(f'response.status: {response.status}')
+                print(f'chat response.status: {response.status}')
                 if response.status == 200:
                     response_data = await response.json()  # Get the response data as JSON
                     print(f'response_data: {response_data}')
@@ -62,10 +62,17 @@ async def on_message(message):
         }
         async with aiohttp.ClientSession() as session:
             async with session.post(flask_app_url, json=payload) as response:
-                print(f'response.status: {response.status}')
+                print(f'file response.status: {response.status}')
                 if response.status == 204:
                     # Edit the thinking message to show the reply
                     await thinking_message.edit(content='File successfully entered into brain.')
+                if response.status == 200:
+                    response_data = await response.json()
+                    print(f'response_data: {response_data}')
+                    summaries = response_data.get('summaries', [])
+                    for summary in summaries:
+                        await message.channel.send(summary)
+                        await thinking_message.edit(content="Uploaded file and generated summaries")
                 else:
                     # Edit the thinking message to show an error
                     await thinking_message.edit(content="Error in processing file(s).")
