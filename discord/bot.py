@@ -1,6 +1,7 @@
 import os
 import discord
-import requests
+import aiohttp
+import json
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -8,9 +9,9 @@ TOKEN = os.getenv('DISCORD_TOKEN')  # Get your bot token from the .env file
 FLASKURL = os.getenv('FLASK_URL')
 intents = discord.Intents.default()
 intents.messages = True
-intents.dm_messages = True
+intents.dm_messages = True  # Enable DM messages
 
-client = discord.Client(intents = intents)
+client = discord.Client(intents=intents)
 
 @client.event
 async def on_ready():
@@ -18,36 +19,55 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    print("on_message")
-    print(f"on_message.author: {message.author}")
     if message.author == client.user:
         return
 
     if message.content:
         print(f'Got the message: {message.content}')
 
+        # Send a thinking message
+        thinking_message = await message.channel.send("Thinking...")
+
         # Forward the message content to your Flask app
         flask_app_url = f'{FLASKURL}/discord/message'
         payload = {
             'content': message.content,
         }
-        response = requests.post(flask_app_url, json=payload)
-        if response.status_code == 204:
-            await message.channel.send("Message has been processed successfully.")
-        else:
-            await message.channel.send("Error in processing message.")
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(flask_app_url, json=payload) as response:
+                print(f'response.status: {response.status}')
+                if response.status == 200:
+                    response_data = await response.json()  # Get the response data as JSON
+                    print(f'response_data: {response_data}')
+                    source_docs = response_data.get('source_documents', [])
+                    reply_content = response_data.get('result')  # Get the 'result' field from the JSON
+                    for source in source_docs:
+                        source_message = f"Source: {source.get('page_content')}\nMetadata: {source.get('metadata')}"
+                        await message.channel.send(source_message)
+                    # Edit the thinking message to show the reply
+                    await thinking_message.edit(content=reply_content)
+                else:
+                    # Edit the thinking message to show an error
+                    await thinking_message.edit(content="Error in processing message.")
 
     if message.attachments:
+        # Send a thinking message
+        thinking_message = await message.channel.send("Uploading file(s)...")
+
         # Forward the attachments to your Flask app
         flask_app_url = f'{FLASKURL}/discord/files'
         payload = {
             'attachments': [{'url': attachment.url, 'filename': attachment.filename} for attachment in message.attachments]
         }
-        response = requests.post(flask_app_url, json=payload)
-        if response.status_code == 204:
-            await message.channel.send("File(s) have been uploaded to Electric Sheep successfully.")
-        else:
-            await message.channel.send("Error in processing file(s).")
-
+        async with aiohttp.ClientSession() as session:
+            async with session.post(flask_app_url, json=payload) as response:
+                print(f'response.status: {response.status}')
+                if response.status == 204:
+                    # Edit the thinking message to show the reply
+                    await thinking_message.edit(content='File successfully entered into brain.')
+                else:
+                    # Edit the thinking message to show an error
+                    await thinking_message.edit(content="Error in processing file(s).")
 
 client.run(TOKEN)

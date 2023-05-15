@@ -66,6 +66,10 @@ Agents and tools are an exciting development on top of LLM output, where you sta
 
 ![](img/llm-architecture.png)
 
+It helps me decide which bits need to be built, to buy or to improve.  I went down a rabbit hole trying to make a decent web UI for chat, but discord has all that sorted out already so a Discord bot is a much nicer experience:
+
+![](img/discord-llm-bit.png)
+
 ## global setup
 
 To run the examples you could do this (I run off MacOS)

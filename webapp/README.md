@@ -55,7 +55,9 @@ Need a seperate Discord bot hosting service with a bot that will call the Cloud 
 1. Upload bot.py, requirements.txt and .env to the Discord bot server
 1. Verify bot server is running
 
+I couldn't make it work permissions with to read every message in a channel, but it does work for direct messages to the bot, which is probably best anyway.
 
+![](img/discord-llm-bit.png)
 
 ## Slackbot
 
