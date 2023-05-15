@@ -28,7 +28,7 @@ Can be used to configure the vectorstore index
 Run locally:
 
 ```
-python3 ./webapp/app.py   
+./env/bin/python3 ./webapp/app.py   
 ```
 
 Give its service account running the Cloud Run Cloud Storage read/write permissions if you supply the _GCS_BUCKET
@@ -41,6 +41,21 @@ can only accept inputs and outputs
 echo 'export DISCORD_URL=https://discord.com/api/webhooks/12345/xxxx' >> ~/.zshenv
 source ~/.zshenv
 ```
+
+Register a new bot with Discord.com
+
+1. Make a new Discord application: https://discord.com/developers/applications
+1. Create a new Bot under that application
+1. Generate DISCORD_TOKEN to put in the bot.py script via .env
+1. Go to OAuth2 > URL Generator to create an invite link and save it somewhere safe
+1. Click on invite link and add the bot to your own Discord server
+
+Need a seperate Discord bot hosting service with a bot that will call the Cloud Run URL.
+
+1. Upload bot.py, requirements.txt and .env to the Discord bot server
+1. Verify bot server is running
+
+
 
 ## Slackbot
 

@@ -72,10 +72,25 @@ def process_input():
     
     return bot_output
 
-@app.route('/discord', methods=['POST'])
-def discord():
+@app.route('/discord/message', methods=['POST'])
+def discord_message():
     data = request.get_json()
     user_input = data['content']  # Extract user input from the payload
+    bucket_name = os.getenv('GCS_BUCKET', None)
+
+    # we ask the bot a question about the documents in the vectorstore
+    bot_output = read_repo.process_input(
+        user_input=user_input,
+        verbose=True,
+        bucket_name=bucket_name)
+    
+    logging.info(f"bot_output: {bot_output}")
+    
+    return bot_output
+
+@app.route('/discord/files', methods=['POST'])
+def discord_files():
+    data = request.get_json()
     attachments = data.get('attachments', [])
     bucket_name = os.getenv('GCS_BUCKET', None)
 
@@ -87,6 +102,7 @@ def discord():
         file_name = attachment['filename']
         response = requests.get(file_url)
         open(file_name, 'wb').write(response.content)
+        files.append(file_name)
     
     if len(files) > 0:
         # send the file as a my_llm.langchain_class.PubSubChatMessageHistory
