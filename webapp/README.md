@@ -7,7 +7,15 @@ This is an exploration on how to interact with the LLM tools in this repo
 ### Add secrets to Secret Manager
 
 * OPENAI_API_KEY
-* DISCORD_URL
+
+### IAM
+
+Use default service account, or better is use a dedicated service account with these permissions
+
+e.g. `your-app@your-project.iam.gserviceaccount.com`
+
+* Pub Sub Editor
+* Storage Admin
 
 ### Run Cloud Build
 
@@ -15,7 +23,7 @@ Run from the root directory of this repository
 
 ```
 gcloud builds submit --config cloudbuild.yaml . \
-  --substitutions=_IMAGE_NAME=edmonbrain,_SERVICE_NAME=edmonbrain-app,_REGION=europe-west3,_GCS_BUCKET=bucket-to-store-vectorstore
+  --substitutions=_IMAGE_NAME=edmonbrain,_SERVICE_NAME=edmonbrain-app,_REGION=europe-west3,_GCS_BUCKET=bucket-to-store-vectorstore,_SERVICE_ACCOUNT=your-service-account@your-project.iam.gserviceaccount.com
 ```
 
 Or preferably set up a Cloud Build Trigger for each git commit

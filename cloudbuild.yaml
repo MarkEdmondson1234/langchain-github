@@ -3,6 +3,7 @@ substitutions:
   _SERVICE_NAME: your-service-name
   _REGION: your-region
   _GCS_BUCKET: your-gcs-bucket
+  _SERVICE_ACCOUNT: your-service@your-project.iam.gserviceaccount.com
 
 steps:
   # Build the Docker image
@@ -26,6 +27,7 @@ steps:
            --memory 1Gi \
            --cpu 1 \
            --max-instances 2 \
+           --service-account ${_SERVICE_ACCOUNT}
            --update-env-vars OPENAI_API_KEY=$$OPENAI_API_KEY,GCS_BUCKET=${_GCS_BUCKET}
     secretEnv: ["OPENAI_API_KEY"]
 
