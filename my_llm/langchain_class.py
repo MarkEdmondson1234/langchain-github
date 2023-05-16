@@ -89,7 +89,7 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
 
     def _route_message(self, timed_message, verbose: bool=False):
 
-        logging.info('_route_message')
+        logging.debug('_route_message')
         metadata = timed_message.metadata if timed_message.metadata is not None else {}
         metadata["role"] = timed_message.role
         metadata["timestamp"] = str(timed_message.timestamp)
@@ -98,17 +98,17 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
 
         # write to disk
         if self.memory_namespace:
-            logging.info("_route_message: write to disk")
+            logging.debug("_route_message: write to disk")
             self._write_to_disk(timed_message, verbose=verbose)
         
         # Publish to Google Pub/Sub
         if self.pubsub_manager:
-            logging.info("_route_message: pubsub")
+            logging.debug("_route_message: pubsub")
             self.pubsub_manager.publish_message(timed_message, verbose=verbose)
 
         # save to vectorstore
         if self.vectorstore_manager:
-            logging.info("_route_message: vectorstore")
+            logging.debug("_route_message: vectorstore")
             metadata.pop("embedding")
             doc = Document(page_content=timed_message.content, metadata=metadata)
             self.save_vectorstore_memory([doc], verbose=verbose)
@@ -119,7 +119,7 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
         if not self.vectorstore_manager:
             print("No vectorstore found to save to")
             return
-        logging.info("Calling vectorstore_manager.save_vectorstore_memory")
+        logging.debug("Calling vectorstore_manager.save_vectorstore_memory")
         self.vectorstore_manager.save_vectorstore_memory(docs, verbose=verbose)
 
     def load_vectorstore_memory(self, verbose=False):

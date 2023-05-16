@@ -15,7 +15,13 @@ from my_llm.langchain_class import PubSubChatMessageHistory
 from langchain import PromptTemplate
 from langchain.document_loaders.unstructured import UnstructuredFileLoader
 
-chat = ChatOpenAI(temperature=0.4)
+chat = ChatOpenAI(temperature=0)
+
+CODE_EXTENSIONS = [".py", ".js", ".java", ".c", ".cpp", ".cc", ".cxx", ".hpp", 
+                   ".h", ".cs", ".m", ".swift", ".go", ".rs", ".rb", ".php", 
+                   ".pl", ".kt", ".kts", ".ts", ".scala", ".hs", ".lua", ".sh", 
+                   ".bash", ".r", ".m", ".sql", ".html", ".css", ".xml", ".json",
+                     ".yaml", ".yml"]
 
 # Get Markdown documents from a repository
 def get_repo_docs(repo_path, extension, memory, ignore=None, resummarise=False, verbose=False):
@@ -102,31 +108,7 @@ def convert_to_txt(file_path):
     shutil.copyfile(file_path, txt_file)
     return txt_file
 
-
-# Function to summarise code from the OpenAI API     
-def generate_code_summary(a_file, memory, resummarise: bool=False, verbose: bool=False):
-    
-    new_file_name = a_file.with_suffix('.md')
-    if os.path.isfile(new_file_name) and not resummarise:
-         if verbose:
-            print(f"Skipping generating summary as found existing code summary file: {new_file_name}")
-         return
-
-    with open(a_file, "r") as file:
-        code = file.read()
-    
-    if len(code) < 10:
-        if verbose:
-            print(f"Skipping generation as not enough information.  Got: {code}")
-        return
-
-    print("================================================")
-    print(f"Requesting code summary for {a_file}   ")
-    print("================================================")
-
-    document = Document(page_content=code, metadata = {"source": os.path.abspath(a_file)})
-    source_chunks = chunk_doc_to_docs([document], a_file.suffix)  
-
+def code_prompt():
     # create prompt to pass in to LLM
     template = """
 Summarise what the code does below.  Use Markdown in your output with the following template:
@@ -146,19 +128,69 @@ How the functions or methods of a class work including listing the Inputs and ou
 ## code examples of use
 
 The code to summarise is here:
-{code}
+{txt}
 """
 
-    prompt = PromptTemplate(
-        input_variables=["code"],
+    return PromptTemplate(
+        input_variables=["txt"],
         template=template,
     )
+
+def text_prompt():
+    # create prompt to pass in to LLM
+    template = """
+Summarise the text below, and add some keywords at the bottom to describe the overall purpose of the text.
+The text to summarise is here:
+{txt}
+"""
+
+    return PromptTemplate(
+        input_variables=["txt"],
+        template=template,
+    )
+
+# Function to summarise code from the OpenAI API     
+def generate_summary(a_file, memory, resummarise: bool=False, verbose: bool=False):
+    
+    new_file_name = a_file.with_suffix('.md')
+    if os.path.isfile(new_file_name) and not resummarise:
+         if verbose:
+            print(f"Skipping generating summary as found existing code summary file: {new_file_name}")
+         return
+
+    try:
+        with open(a_file, "r") as file:
+            file_text = file.read()
+    except Exception as e:
+        print(f"Error generating summary: {str(e)}")
+        return
+    
+    if len(file_text) < 10:
+        if verbose:
+            print(f"Skipping generation as not enough information.  Got: {file_text}")
+        return
+
+    document = Document(page_content=file_text, metadata = {"source": os.path.abspath(a_file)})
+    source_chunks = chunk_doc_to_docs([document], a_file.suffix)  
+
+    code = True if str(a_file.suffix).lower() in CODE_EXTENSIONS else False
+
+    if code:
+        print("================================================")
+        print(f"Requesting code summary for {a_file}   ")
+        print("================================================")
+        prompt = code_prompt()
+    else:
+        print("================================================")
+        print(f"Requesting text summary for {a_file}   ")
+        print("================================================")
+        prompt = text_prompt()
     
     new_file_name = a_file.with_suffix('.md')
 
     for chunk in source_chunks:
         summary = my_llm.request_llm(
-            prompt.format(code=chunk.page_content), 
+            prompt.format(txt=chunk.page_content), 
             chat, 
             memory,
             metadata={'task':'summarise_code'})
@@ -280,11 +312,13 @@ def summarise_single_file(filename, bucket_name, verbose=False):
 
     memory = setup_memory(config)
 
-    summary_filename = generate_code_summary(filename, 
-                                            memory, 
-                                            resummarise=True, 
-                                            verbose=verbose)
+    summary_filename = generate_summary(filename, 
+                                        memory, 
+                                        resummarise=True, 
+                                        verbose=verbose)
     
+    if not summary_filename:
+        return f"No summary generated for {str(filename)}"    
 
     documents = read_file_to_document(summary_filename)
     chunks = chunk_doc_to_docs(documents, filename.suffix)

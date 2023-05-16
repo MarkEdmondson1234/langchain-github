@@ -23,11 +23,16 @@ def send_document_to_index(safe_filepath:str, bucket_name):
     try:
         # the original file split into chunks if necessary
         chunks = read_repo.add_single_file(safe_filepath, bucket_name, verbose=True)
+        content = "\n".join(chunks)
+        safe_summary = f"{safe_filepath}.sum.txt"
+        with open(safe_summary, 'w') as file:
+            file.write(content)
         # a summary of the file
-        summary = read_repo.summarise_single_file(safe_filepath, bucket_name, verbose=True)
+        summary = read_repo.summarise_single_file(safe_summary, bucket_name, verbose=True)
     finally:
         logging.info(f"Removing {safe_filepath}")
         os.remove(safe_filepath)
+        os.remove(safe_summary)
     return summary
 
 @app.route('/process_files', methods=['POST'])

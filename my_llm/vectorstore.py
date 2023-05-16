@@ -35,6 +35,7 @@ class MessageVectorStore:
         self.bucket_name = bucket_name
         self.bucket_client = None
         self.sync_started = False
+        self.autosave_gcs = False
 
         if self.bucket_name:
             self._get_set_bucket_client(self.bucket_name)
@@ -81,7 +82,7 @@ class MessageVectorStore:
         logging.info(f'Saved {len(ids)} documents to vectorstore:')
         for chunk in source_chunks:
             logging.info(chunk.page_content[:30].strip() + "...")
-            logging.info(chunk.metadata.keys())
+            logging.info(chunk.metadata)
 
         return ids
 
@@ -257,13 +258,15 @@ class MessageVectorStore:
         self._get_set_bucket_client(bucket_name)
 
         if self.bucket_client:
-            logging.info(f"Uploading files")
+            logging.debug(f"Uploading files")
             self._upload_directory(self.bucket_client, directory_path, local_dir)
             logging.info(f"Upload complete")
 
     def auto_save_vectorstore_gcs(self, bucket_name):
-        logging.info(f"Setting up auto-saving vector store to {bucket_name}")
-        atexit.register(self.save_vectorstore_gcs, bucket_name)
+        if not self.autosave_gcs:
+            logging.debug(f"Setting up auto-saving vector store to {bucket_name}")
+            atexit.register(self.save_vectorstore_gcs, bucket_name)
+            self.autosave_gcs = True
 
 
     def create_vectorstore_memory(self, embedding=None):

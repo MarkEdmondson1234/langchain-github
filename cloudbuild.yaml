@@ -23,12 +23,13 @@ steps:
            --region ${_REGION} \
            --platform managed \
            --allow-unauthenticated \
-           --update-env-vars OPENAI_API_KEY=$$OPENAI_API_KEY,DISCORD_URL=$$DISCORD_URL,GCS_BUCKET=${_GCS_BUCKET}
-    secretEnv: ["OPENAI_API_KEY", "DISCORD_URL"]
+           --memory 1Gi \
+           --cpu 1 \
+           --max-instances 2 \
+           --update-env-vars OPENAI_API_KEY=$$OPENAI_API_KEY,GCS_BUCKET=${_GCS_BUCKET}
+    secretEnv: ["OPENAI_API_KEY"]
 
 availableSecrets:
   secretManager:
   - versionName: projects/$PROJECT_ID/secrets/OPENAI_API_KEY/versions/latest
     env: OPENAI_API_KEY
-  - versionName: projects/$PROJECT_ID/secrets/DISCORD_URL/versions/latest
-    env: DISCORD_URL

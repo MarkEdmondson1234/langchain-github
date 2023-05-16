@@ -83,6 +83,12 @@ optional arguments:
   --resummarise    Recreate the code.md files describing the code (default: False)
 ```
 
+### Installing poppler-utils and tesseract so it can read PDFs
+
+To use with PDFs, some additional system requirements are needed that are called to extract text from PDF files.
+
+* For Ubuntu or other Debian based systems, use: `sudo apt-get install poppler-utils tesseract-ocr`
+* For macOS, use: `brew install poppler tesseract`
 
 ### Running the script
 
