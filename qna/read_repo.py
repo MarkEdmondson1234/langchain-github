@@ -257,7 +257,8 @@ def document_to_dict(document):
 
 def process_input(user_input: str, 
                   verbose: bool =True,
-                  bucket_name: str = None):
+                  bucket_name: str = None,
+                  chat_history = None):
 
     # more only needed if you need to recreate the vectorstore which we wont with web app
     config = {
@@ -270,7 +271,10 @@ def process_input(user_input: str,
         print(f"process_input config: {config}")
     
     memory = setup_memory(config)
-    answer = memory.question_memory(user_input, llm=chat, verbose=verbose)
+    answer = memory.question_memory(user_input, 
+                                    llm=chat, 
+                                    verbose=verbose,
+                                    chat_history = chat_history)
 
     response = {'result': 'No answer found'}
     if answer is not None:

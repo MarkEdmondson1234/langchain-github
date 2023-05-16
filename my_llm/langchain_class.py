@@ -8,6 +8,8 @@ from langchain.memory import ConversationSummaryBufferMemory
 
 from langchain.chains import RetrievalQA
 
+from langchain import PromptTemplate
+
 from langchain.docstore.document import Document
 from langchain.embeddings.openai import OpenAIEmbeddings
 
@@ -271,16 +273,36 @@ class PubSubChatMessageHistory(BaseChatMessageHistory):
         for human, ai in inputs:
             res.append(f"Human:{human}\nAI:{ai}")
         return "\n".join(res)
+
+    def _chat_history_prompt(self):
+        # create prompt to pass in to LLM
+        template = """
+Here is the chat history for this conversation between you (labelled AI) and me (labelled Human)\n
+{chat_history}
+"""
+
+        return PromptTemplate(
+            input_variables=["chat_history"],
+            template=template,
+        )
     
-    def question_memory(self, question: str, llm=OpenAI(temperature=0), verbose=False):
+    def question_memory(self, question: str, 
+                        llm=OpenAI(temperature=0), 
+                        verbose=False,
+                        chat_history=None):
+        
         db = self.vectorstore_manager.load_vectorstore_memory()
-
-        if verbose:
-            print(f"Question: {question}")
-
         docs = db.similarity_search(question)
         if len(docs) == 0:
             logging.info("No documents found similar to your question")
+
+        if chat_history:
+            prompt = self._chat_history_prompt()
+            history = self._get_chat_history(chat_history)
+            question = prompt.format(chat_history=history) + f'\n{question}'
+
+        if verbose:
+            print(f"Question: {question}")
 
         # Load a QA chain
         # TODO: Use ConversationalRetrievalChain
