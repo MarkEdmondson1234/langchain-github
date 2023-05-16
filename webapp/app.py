@@ -89,13 +89,17 @@ def discord_message():
     bucket_name = os.getenv('GCS_BUCKET', None)
     chat_history = data.get('chat_history', None)
 
+    print(f"discord_message: {data}")
+
     if chat_history:
         # Separate the messages into human and AI messages
         human_messages = [message["content"] for message in chat_history if message["name"] == "Human"]
         ai_messages = [message["content"] for message in chat_history if message["name"] == "AI"]
-
-    # Pair up the human and AI messages into tuples
-    paired_messages = list(zip(human_messages, ai_messages))
+        # Pair up the human and AI messages into tuples
+        paired_messages = list(zip(human_messages, ai_messages))
+    else:
+        print("No chat history found")
+        paired_messages = None
 
     # we ask the bot a question about the documents in the vectorstore
     bot_output = read_repo.process_input(

@@ -86,7 +86,8 @@ class MessageVectorStore:
 
         return ids
 
-    def start_periodic_sync(self, sync_interval=60*5):
+    def start_periodic_sync(self, sync_interval):
+        logging.info("Starting periodic sync")
         def periodic_sync():
             while True:
                 time.sleep(sync_interval)
@@ -189,7 +190,7 @@ class MessageVectorStore:
             try:
                 self.bucket_client = client.get_bucket(self.bucket_name)
                 if not self.sync_started:
-                    self.start_periodic_sync(sync_interval=60)
+                    self.start_periodic_sync(sync_interval=60*5)
                     self.sync_started = True
             except NotFound:
                 logging.info(f"bucket {self.bucket_name} not found ")

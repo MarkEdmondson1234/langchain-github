@@ -43,12 +43,7 @@ Give its service account running the Cloud Run Cloud Storage read/write permissi
 
 ## Discord bot
 
-can only accept inputs and outputs
-
-```
-echo 'export DISCORD_URL=https://discord.com/api/webhooks/12345/xxxx' >> ~/.zshenv
-source ~/.zshenv
-```
+Can accept inputs, outputs, proviides chat history and can upload limited files
 
 Register a new bot with Discord.com
 
@@ -59,6 +54,8 @@ Register a new bot with Discord.com
 1. Click on invite link and add the bot to your own Discord server
 
 Need a seperate Discord bot hosting service with a bot that will call the Cloud Run URL.
+
+I deploy mine from this repo https://github.com/MarkEdmondson1234/discord-bot
 
 1. Upload bot.py, requirements.txt and .env to the Discord bot server
 1. Verify bot server is running
