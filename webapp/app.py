@@ -122,12 +122,15 @@ def discord_files():
     attachments = data.get('attachments', [])
     bucket_name = os.getenv('GCS_BUCKET', None)
 
+    os.makedirs('temp', exist_ok=True)
+
     # Handle file attachments
     bot_output = []
     for attachment in attachments:
         # Download the file and store it temporarily
         file_url = attachment['url']
         file_name = attachment['filename']
+        file_name = os.path.join('temp', file_name)
         response = requests.get(file_url)
         open(file_name, 'wb').write(response.content)
         summary = send_document_to_index(file_name, bucket_name)

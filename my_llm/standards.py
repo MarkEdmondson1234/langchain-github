@@ -116,7 +116,9 @@ def request_code(prompt, chat, memory, verbose=False):
 
 # Save generated code to a file, make the folder if needed
 def save_to_file(filename, content, type="w"):
-    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    dirname = os.path.dirname(filename)
+    if dirname != "":
+        os.makedirs(filename, exist_ok=True)
     with open(filename, type) as file:
         file.write(content)
 
