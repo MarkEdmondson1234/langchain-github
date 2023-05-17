@@ -153,7 +153,7 @@ class MessageVectorStore:
         if embedding is not None:
             self.embedding = embedding
         
-        if self.bucket_name:
+        if self.bucket_name and not self.autosave_gcs:
             self.auto_save_vectorstore_gcs(self.bucket_name)
         
         return Chroma(persist_directory=str(db_path), embedding_function=self.embedding)

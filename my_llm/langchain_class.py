@@ -294,8 +294,9 @@ Here is the chat history for this conversation between you (labelled AI) and me 
         db = self.vectorstore_manager.load_vectorstore_memory()
         docs = db.similarity_search(question)
         if len(docs) == 0:
-            logging.info("No documents found similar to your question")
+            logging.info(f"No documents found similar to your question: {question}")
 
+        history = None
         if chat_history:
             prompt = self._chat_history_prompt()
             history = self._get_chat_history(chat_history)
@@ -303,6 +304,7 @@ Here is the chat history for this conversation between you (labelled AI) and me 
 
         if verbose:
             print(f"Question: {question}")
+        logging.info(f"Prompt after processing: {question}")
 
         # Load a QA chain
         # TODO: Use ConversationalRetrievalChain
@@ -326,6 +328,8 @@ Here is the chat history for this conversation between you (labelled AI) and me 
                 source_metadata.append(p)
 
             metadata = {"task": "QnA", "sources":json.dumps(source_metadata)}
+            if history:
+                metadata["history"] = history
 
         self.add_user_message(question, metadata={"task": "QnA"}, verbose=verbose)
         self.add_ai_message(answer, metadata=metadata, verbose=verbose)

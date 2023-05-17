@@ -119,6 +119,7 @@ def discord_message():
     source_documents_str = json.dumps(source_documents)
 
     total_length = len(result_str) + len(source_documents_str)
+    logging.info('Total length: {total_length} characters')
     if total_length > 4000:
         # Remove documents from the end until the total length is under 4000 characters
         while total_length > 4000 and source_documents:

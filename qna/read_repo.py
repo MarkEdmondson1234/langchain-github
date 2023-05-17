@@ -15,6 +15,8 @@ from my_llm.langchain_class import PubSubChatMessageHistory
 from langchain import PromptTemplate
 from langchain.document_loaders.unstructured import UnstructuredFileLoader
 
+import logging
+
 chat = ChatOpenAI(temperature=0)
 
 CODE_EXTENSIONS = [".py", ".js", ".java", ".c", ".cpp", ".cc", ".cxx", ".hpp", 
@@ -269,6 +271,8 @@ def process_input(user_input: str,
     if verbose:
         print(f"user_input: {user_input}")
         print(f"process_input config: {config}")
+    logging.info(f"user_input: {user_input}")
+    logging.info(f"process_input config: {config}")
     
     memory = setup_memory(config)
     answer = memory.question_memory(user_input, 
@@ -282,6 +286,8 @@ def process_input(user_input: str,
         if answer.get('source_documents') is not None:
             source_documents = [document_to_dict(doc) for doc in answer['source_documents']]
             response['source_documents'] = source_documents
+        else:
+            logging.info('No source documents found')
 
     return response
 
