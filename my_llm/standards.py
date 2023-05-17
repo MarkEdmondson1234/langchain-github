@@ -118,7 +118,7 @@ def request_code(prompt, chat, memory, verbose=False):
 def save_to_file(filename, content, type="w"):
     dirname = os.path.dirname(filename)
     if dirname != "":
-        os.makedirs(filename, exist_ok=True)
+        os.makedirs(dirname, exist_ok=True)
     with open(filename, type) as file:
         file.write(content)
 

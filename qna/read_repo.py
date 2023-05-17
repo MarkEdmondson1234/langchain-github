@@ -152,7 +152,10 @@ The text to summarise is here:
     )
 
 # Function to summarise code from the OpenAI API     
-def generate_summary(a_file, memory, resummarise: bool=False, verbose: bool=False):
+def generate_summary(a_file: pathlib.Path, memory, resummarise: bool=False, verbose: bool=False):
+    
+    if a_file.is_dir():
+        raise ValueError(f"a_file must not be a directory: {a_file}")
     
     new_file_name = a_file.with_suffix('.md')
     if os.path.isfile(new_file_name) and not resummarise:
@@ -187,8 +190,6 @@ def generate_summary(a_file, memory, resummarise: bool=False, verbose: bool=Fals
         print(f"Requesting text summary for {a_file}   ")
         print("================================================")
         prompt = text_prompt()
-    
-    new_file_name = a_file.with_suffix('.md')
 
     for chunk in source_chunks:
         summary = my_llm.request_llm(
@@ -291,12 +292,15 @@ def process_input(user_input: str,
 
     return response
 
-def add_single_file(filename, bucket_name, verbose=False):
+def add_single_file(filename: str, bucket_name, verbose=False):
     config = {
         'reindex': False, # as we will trigger file summary directly
         'bucket_name': bucket_name
     }
     filename = pathlib.Path(filename)
+    if not filename.is_file():
+        raise ValueError(f"Filename was not a valid file path: {filename}")
+    
     docs = read_file_to_document(filename)
     chunks = chunk_doc_to_docs(docs, filename.suffix)
 
@@ -312,13 +316,15 @@ def add_single_file(filename, bucket_name, verbose=False):
     return docs_output
 
 
-def summarise_single_file(filename, bucket_name, verbose=False):
+def summarise_single_file(filename: str, bucket_name, verbose=False):
     config = {
         'reindex': False, # as we will trigger file summary directly
         'bucket_name': bucket_name
     }
 
     filename = pathlib.Path(filename)
+    if not filename.is_file():
+        raise ValueError(f"Filename was not a valid file path: {filename}")
 
     memory = setup_memory(config)
 

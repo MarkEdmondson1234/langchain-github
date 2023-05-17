@@ -1,4 +1,5 @@
 import sys, os, requests, json
+import tempfile
 
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(parent_dir)
@@ -42,24 +43,24 @@ def process_files():
     logging.info(f"bucket: {bucket_name}")
 
     uploaded_files = request.files.getlist('files')
-    os.makedirs('temp', exist_ok=True)
-    summaries = []
-    if len(uploaded_files) > 0:
-        logging.info('Upload form data')
-        for file in uploaded_files:
-            logging.info(f'Uploading {file.filename}')
-            
-            # Save the file temporarily
-            safe_filepath = os.path.abspath(os.path.join('temp', file.filename))
-            logging.info(f'Saving file: {safe_filepath}')
-            file.save(safe_filepath)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        summaries = []
+        if len(uploaded_files) > 0:
+            logging.info('Upload form data')
+            for file in uploaded_files:
+                logging.info(f'Uploading {file.filename}')
+                
+                # Save the file temporarily
+                safe_filepath = os.path.join(temp_dir, file.filename)
+                logging.info(f'Saving file: {safe_filepath}')
+                file.save(safe_filepath)
 
-            # we add document to the index
-            summary = send_document_to_index(safe_filepath, bucket_name)
-            summaries.append(summary)
+                # we add document to the index
+                summary = send_document_to_index(safe_filepath, bucket_name)
+                summaries.append(summary)
 
-        return jsonify({"summaries": summaries})
-    
+            return jsonify({"summaries": summaries})
+        
     return jsonify({"summaries": ["No files were uploaded"]})
 
 @app.route('/process_input', methods=['POST'])
@@ -119,7 +120,7 @@ def discord_message():
     source_documents_str = json.dumps(source_documents)
 
     total_length = len(result_str) + len(source_documents_str)
-    logging.info('Total length: {total_length} characters')
+    logging.info(f'Total length: {total_length} characters')
     if total_length > 4000:
         # Remove documents from the end until the total length is under 4000 characters
         while total_length > 4000 and source_documents:
@@ -138,18 +139,20 @@ def discord_files():
     bucket_name = os.getenv('GCS_BUCKET', None)
 
     os.makedirs('temp', exist_ok=True)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Handle file attachments
+        bot_output = []
+        for attachment in attachments:
+            # Download the file and store it temporarily
+            file_url = attachment['url']
+            file_name = attachment['filename']
+            safe_file_name = os.path.join(temp_dir, file_name)
+            response = requests.get(file_url)
+            
+            open(safe_file_name, 'wb').write(response.content)
 
-    # Handle file attachments
-    bot_output = []
-    for attachment in attachments:
-        # Download the file and store it temporarily
-        file_url = attachment['url']
-        file_name = attachment['filename']
-        file_name = os.path.join('temp', file_name)
-        response = requests.get(file_url)
-        open(file_name, 'wb').write(response.content)
-        summary = send_document_to_index(file_name, bucket_name)
-        bot_output.append(summary)
+            summary = send_document_to_index(safe_file_name, bucket_name)
+            bot_output.append(summary)
 
     # Format the response payload
     response_payload = {
