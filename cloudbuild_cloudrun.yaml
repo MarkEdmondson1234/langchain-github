@@ -8,6 +8,7 @@ substitutions:
 steps:
   - name: 'gcr.io/cloud-builders/docker'
     entrypoint: 'bash'
+    secretEnv: ["OPENAI_API_KEY", "SUPABASE_URL", "SUPABASE_KEY"]
     args:
     - '-c'
     - |
@@ -17,6 +18,10 @@ steps:
       COPY . .
 
       EXPOSE 8080
+      ENV SUPABASE_URL=$$SUPABASE_URL
+      ENV SUPABASE_KEY=$$SUPABASE_KEY
+      ENV OPENAI_API_KEY=$$OPENAI_API_KEY
+      ENV GCS_BUCKET=${_GCS_BUCKET}
 
       CMD ["python", "webapp/app.py"]
       EOF
@@ -42,19 +47,6 @@ steps:
            --cpu 1 \
            --max-instances 2 \
            --service-account ${_SERVICE_ACCOUNT}
-
-  - name: "gcr.io/cloud-builders/gcloud"
-    id: update env vars
-    entrypoint: bash
-    args:
-      - "-c"
-      - |
-        gcloud run services update ${_SERVICE_NAME}
-           --update-env-vars SUPABASE_URL=$$SUPABASE_URL \
-           --update-env-vars SUPABASE_KEY=$$SUPABASE_KEY \
-           --update-env-vars OPENAI_API_KEY=$$OPENAI_API_KEY \
-           --update-env-vars GCS_BUCKET=${_GCS_BUCKET}
-    secretEnv: ["OPENAI_API_KEY", "SUPABASE_URL", "SUPABASE_KEY"]
 
 availableSecrets:
   secretManager:
