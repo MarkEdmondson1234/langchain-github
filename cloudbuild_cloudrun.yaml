@@ -41,10 +41,14 @@ steps:
            --cpu 1 \
            --max-instances 2 \
            --service-account ${_SERVICE_ACCOUNT} \
-           --update-env-vars OPENAI_API_KEY=$$OPENAI_API_KEY,GCS_BUCKET=${_GCS_BUCKET}
-    secretEnv: ["OPENAI_API_KEY"]
+          --update-env-vars OPENAI_API_KEY=$$OPENAI_API_KEY,GCS_BUCKET=${_GCS_BUCKET},SUPABASE_URL=$$SUPABASE_URL,SUPABASE_KEY=$$SUPABASE_KEY
+    secretEnv: ["OPENAI_API_KEY", "SUPABASE_URL", "SUPABASE_KEY"]
 
 availableSecrets:
   secretManager:
   - versionName: projects/$PROJECT_ID/secrets/OPENAI_API_KEY/versions/latest
     env: OPENAI_API_KEY
+  - versionName: projects/$PROJECT_ID/secrets/SUPABASE_URL/versions/latest
+    env: SUPABASE_URL
+  - versionName: projects/$PROJECT_ID/secrets/SUPABASE_KEY/versions/latest
+    env: SUPABASE_KEY
