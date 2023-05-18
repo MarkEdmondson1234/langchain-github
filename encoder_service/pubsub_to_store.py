@@ -149,8 +149,12 @@ def pubsub_to_doc(data: dict, vector_name:str="documents"):
         chunks = chunk_doc_to_docs([doc], ".txt")
 
     vector_store = SupabaseVectorStore(supabase, embeddings, table_name=vector_name)
-    # Process the Document
-    vector_store.add_documents(chunks)
+
+    try:
+        # Process the Document
+        vector_store.add_documents(chunks)
+    except Exception as e:
+        logging.error(str(e))
 
     logging.info(metadata)
 
