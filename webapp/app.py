@@ -19,6 +19,7 @@ def pubsub_to_doc(vector_name):
         data = request.get_json()
 
         try:
+            # need to create a supabase table for each vector_name used
             meta = pubsub_to_store.pubsub_to_doc(data, vector_name)
         except Exception as e:
             return jsonify({"Error": str(e)}), 503

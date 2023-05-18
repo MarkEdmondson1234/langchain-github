@@ -6,7 +6,6 @@ from langchain.embeddings import OpenAIEmbeddings
 from langchain.docstore.document import Document
 from google.cloud import storage
 import base64
-import json
 import langchain.text_splitter as text_splitter
 
 from langchain.vectorstores import SupabaseVectorStore
@@ -140,22 +139,20 @@ def pubsub_to_doc(data: dict, vector_name:str="documents"):
 
         chunks = chunk_doc_to_docs([doc], ".txt")
 
+    logging.info("Initiating Supabase store")
     # init embedding and vector store
     supabase_url = os.getenv('SUPABASE_URL')
     supabase_key = os.getenv('SUPABASE_KEY')
 
-    logging.debug(f"Supabase settings: {supabase_url} {supabase_key}")
+    logging.info(f"Supabase URL: {supabase_url}")
     embeddings = OpenAIEmbeddings()
     supabase: Client = create_client(supabase_url, supabase_key)
 
     vector_store = SupabaseVectorStore(supabase, embeddings, table_name=vector_name)
 
-    try:
-        # Process the Document
-        vector_store.add_documents(chunks)
-    except Exception as e:
-        logging.error(str(e))
+    logging.info("Adding document to Supabase")
+    vector_store.add_documents(chunks)
 
-    logging.info(metadata)
+    logging.info(f"Add doc with metadata: {metadata}")
 
     return metadata

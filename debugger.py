@@ -6,35 +6,39 @@ import my_llm.standards as my_llm
 import openai
 from langchain.chat_models import ChatOpenAI
 from my_llm.langchain_class import PubSubChatMessageHistory
+# imports
+import os, shutil
+import pathlib
+from langchain.document_loaders.unstructured import UnstructuredFileLoader
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.docstore.document import Document
+from google.cloud import storage
+import base64
+import json
+import langchain.text_splitter as text_splitter
 
-# Set up OpenAI API
-openai.api_key = os.environ["OPENAI_API_KEY"]
+from langchain.vectorstores import SupabaseVectorStore
+from supabase import Client, create_client
+from dotenv import load_dotenv
+import tempfile
+import hashlib
+from langchain.schema import Document
+import logging
 
-chat = ChatOpenAI(temperature=0.4)
+supabase_url = os.getenv('SUPABASE_URL')
+supabase_key = os.getenv('SUPABASE_KEY')
 
-memory = PubSubChatMessageHistory("debugger2")
-memory.clear()
+print(f"Supabase settings: {supabase_url} {supabase_key}")
+embeddings = OpenAIEmbeddings()
+print("Creating client")
+supabase: Client = create_client(supabase_url, supabase_key)
 
-# # load chat-gpt history
-memory.load_chatgpt_export("/Users/mark/dev/ml/chatgpt_export/conversations.json")
+print("Initiating vectorstore")
+vector_store = SupabaseVectorStore(supabase, embeddings, table_name="documents")
 
-summary = memory.apply_summarise_to_memory(n=10)
+chunks = [Document(page_content="debugging1"), Document(page_content="debugging2")]
 
-# temps = [0.1, 0.25, 0.5, 0.75, 1]
-temps = [1]
-prompt = f"""
-Speculate what could happen next or what were the circumstances leading to the below.  
-Prefix your response with 'ELECTRIC SHEEP:'
-{summary}
-"""
-for temp in temps:
-    dream = ChatOpenAI(temperature=temp)
-    my_llm.request_llm(prompt, dream, memory)
+vector_store.add_documents(chunks)
 
-
-# it searches over the vectorstore, and inserts context into the prompt before sending the answer to LLM
-result = memory.question_memory("What messages include ELECTRIC SHEEP?")
-print("## Answer: {}".format(result['result']))
-print('== Document sources:')
-print(result)
+print("Added texts")
 
