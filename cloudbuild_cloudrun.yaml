@@ -29,6 +29,7 @@ steps:
 
   # Deploy the image to Cloud Run
   - name: "gcr.io/cloud-builders/gcloud"
+    id: deploy cloud run
     entrypoint: bash
     args:
       - "-c"
@@ -40,9 +41,19 @@ steps:
            --memory 1Gi \
            --cpu 1 \
            --max-instances 2 \
-           --service-account ${_SERVICE_ACCOUNT} \
-           --update-env-vars OPENAI_API_KEY=$$OPENAI_API_KEY,GCS_BUCKET=${_GCS_BUCKET},\
-           SUPABASE_URL=$$SUPABASE_URL,SUPABASE_KEY=$$SUPABASE_KEY
+           --service-account ${_SERVICE_ACCOUNT}
+
+  - name: "gcr.io/cloud-builders/gcloud"
+    id: update env vars
+    entrypoint: bash
+    args:
+      - "-c"
+      - |
+        gcloud run services update ${_SERVICE_NAME}
+           --set-env-vars SUPABASE_URL=$$SUPABASE_URL \
+           --set-env-vars SUPABASE_KEY=$$SUPABASE_KEY \
+           --set-env-vars OPENAI_API_KEY=$$OPENAI_API_KEY \
+           --set-env-vars GCS_BUCKET=${_GCS_BUCKET}
     secretEnv: ["OPENAI_API_KEY", "SUPABASE_URL", "SUPABASE_KEY"]
 
 availableSecrets:
