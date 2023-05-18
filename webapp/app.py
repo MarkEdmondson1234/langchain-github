@@ -111,25 +111,7 @@ def discord_message():
     
     logging.info(f"bot_output: {bot_output}")
 
-    # Ensure the message doesn't exceed Discord's character limit
-    result = bot_output.get('result', '')
-    source_documents = bot_output.get('source_documents', [])
-
-    # Convert result and source_documents to a string representation to count characters
-    result_str = json.dumps(result)
-    source_documents_str = json.dumps(source_documents)
-
-    total_length = len(result_str) + len(source_documents_str)
-    logging.info(f'Total length: {total_length} characters')
-    if total_length > 4000:
-        # Remove documents from the end until the total length is under 4000 characters
-        while total_length > 4000 and source_documents:
-            source_documents.pop()
-            source_documents_str = json.dumps(source_documents)
-            total_length = len(result_str) + len(source_documents_str)
-
-        bot_output['source_documents'] = source_documents
-
+    # may be over 4000 char limit for discord but discord bot chunks it up for output
     return jsonify(bot_output)
 
 @app.route('/discord/files', methods=['POST'])
@@ -138,7 +120,6 @@ def discord_files():
     attachments = data.get('attachments', [])
     bucket_name = os.getenv('GCS_BUCKET', None)
 
-    os.makedirs('temp', exist_ok=True)
     with tempfile.TemporaryDirectory() as temp_dir:
         # Handle file attachments
         bot_output = []

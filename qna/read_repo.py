@@ -51,7 +51,7 @@ def get_repo_docs(repo_path, extension, memory, ignore=None, resummarise=False, 
                 k += 1
                 if str(non_md_file).startswith(str(ignore_path)):
                       continue
-                generate_code_summary(non_md_file, memory, resummarise=resummarise, verbose=verbose)
+                generate_summary(non_md_file, memory, resummarise=resummarise, verbose=verbose)
                 if verbose:
                     print(f"Generated summary for a {ext} file: {k} of {num_matched_files} done.")
                               
@@ -191,12 +191,16 @@ def generate_summary(a_file: pathlib.Path, memory, resummarise: bool=False, verb
         print("================================================")
         prompt = text_prompt()
 
+    num_chunks = len(source_chunks)
+    i=0
     for chunk in source_chunks:
+        logging.info(f"Summarising chunk {i} of {num_chunks} of {a_file}")
+        i += 1
         summary = my_llm.request_llm(
             prompt.format(txt=chunk.page_content), 
             chat, 
             memory,
-            metadata={'task':'summarise_code'})
+            metadata={'task':'summarise_chunk'})
     
         my_llm.save_to_file(new_file_name, summary + '\n\n', type = "a")
     
@@ -307,10 +311,14 @@ def add_single_file(filename: str, bucket_name, verbose=False):
     memory = setup_memory(config)
 
     docs_output = []
+    chunk_length = len(chunks)
+    i = 0
     for chunk in chunks:
+        logging.info(f"Uploading chunk {i} of size {chunk_length} for {filename.name}")
+        i+=1
         memory.add_user_message(chunk.page_content, 
                                 metadata={"task": "singlefile load original",
-                                          "source": str(filename)})
+                                          "source": filename.name})
         docs_output.append(chunk.page_content)
     
     return docs_output
@@ -343,7 +351,7 @@ def summarise_single_file(filename: str, bucket_name, verbose=False):
     for chunk in chunks:
         memory.add_user_message(chunk.page_content, 
                                 metadata={"task": "singlefile load summary",
-                                          "source": str(filename)})
+                                          "source": filename.name})
         output_content += chunk.page_content + "\n\n"
 
     return output_content
