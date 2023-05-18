@@ -223,14 +223,14 @@ def get_source_docs(repo_path, extension, memory, ignore, resummarise, verbose):
 
     return source_chunks
 
-def choose_splitter(extension):
-    splitter = text_splitter.RecursiveCharacterTextSplitter(chunk_size=1024, chunk_overlap=0)
+def choose_splitter(extension: str, chunk_size: int=1024, chunk_overlap:int=0):
     if extension == ".py":
-        splitter = text_splitter.PythonCodeTextSplitter()
+        return text_splitter.PythonCodeTextSplitter()
     elif extension == ".md":
-        splitter = text_splitter.MarkdownTextSplitter()
+        return text_splitter.MarkdownTextSplitter()
     
-    return splitter
+    return text_splitter.RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+
 
 def setup_memory(config):
 

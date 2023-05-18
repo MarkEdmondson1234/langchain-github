@@ -7,9 +7,24 @@ sys.path.append(parent_dir)
 # app.py
 from flask import Flask, render_template, request, jsonify
 from qna import read_repo
+from encoder_service import pubsub_to_store
 import logging
 
 app = Flask(__name__)
+
+# can only take up to 10 minutes to ack
+@app.route('/pubsub_to_store', methods=['POST'])
+def pubsub_to_doc():
+    if request.method == 'POST':
+        data = request.get_json()
+
+        try:
+            meta = pubsub_to_store(data)
+        except Exception as e:
+            return jsonify({f"Error: {e.message}"}, 503)
+
+        return jsonify({f"Success: {meta}"}), 200
+
 
 @app.route('/', methods=['GET'])
 def index():

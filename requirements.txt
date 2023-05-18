@@ -13,3 +13,4 @@ unstructured[local-inference]
 tabulate
 pdf2image
 pytesseract
+supabase
