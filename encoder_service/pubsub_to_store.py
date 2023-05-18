@@ -25,8 +25,7 @@ supabase_key = os.getenv('SUPABASE_KEY')
 embeddings = OpenAIEmbeddings()
 supabase: Client = create_client(supabase_url, supabase_key)
 
-vector_store = SupabaseVectorStore(
-    supabase, embeddings, table_name="documents")
+
 
 # Create a client
 storage_client = storage.Client()
@@ -103,7 +102,7 @@ def chunk_doc_to_docs(documents: list, extension: str = ".md"):
 
         return source_chunks  
 
-def pubsub_to_doc(data):
+def pubsub_to_doc(data: dict, vector_name:str="documents"):
     """Triggered from a message on a Cloud Pub/Sub topic.
     Args:
          data JSON
@@ -149,6 +148,7 @@ def pubsub_to_doc(data):
 
         chunks = chunk_doc_to_docs([doc], ".txt")
 
+    vector_store = SupabaseVectorStore(supabase, embeddings, table_name=vector_name)
     # Process the Document
     vector_store.add_documents(chunks)
 

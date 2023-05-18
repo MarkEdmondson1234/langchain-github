@@ -13,17 +13,17 @@ import logging
 app = Flask(__name__)
 
 # can only take up to 10 minutes to ack
-@app.route('/pubsub_to_store', methods=['POST'])
-def pubsub_to_doc():
+@app.route('/pubsub_to_store/<vector_name>', methods=['POST'])
+def pubsub_to_doc(vector_name):
     if request.method == 'POST':
         data = request.get_json()
 
         try:
-            meta = pubsub_to_store(data)
+            meta = pubsub_to_store.pubsub_to_doc(data, vector_name)
         except Exception as e:
-            return jsonify({f"Error: {e.message}"}, 503)
+            return jsonify({"Error": str(e)}), 503
 
-        return jsonify({f"Success: {meta}"}), 200
+        return jsonify({"Success": meta}), 200
 
 
 @app.route('/', methods=['GET'])
