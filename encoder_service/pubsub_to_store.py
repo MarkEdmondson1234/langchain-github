@@ -18,17 +18,6 @@ from langchain.schema import Document
 import logging
 
 load_dotenv()
-supabase_url = os.getenv('SUPABASE_URL')
-supabase_key = os.getenv('SUPABASE_KEY')
-
-# init embedding and vector store
-embeddings = OpenAIEmbeddings()
-supabase: Client = create_client(supabase_url, supabase_key)
-
-
-
-# Create a client
-storage_client = storage.Client()
 
 # utility functions
 def convert_to_txt(file_path):
@@ -121,6 +110,9 @@ def pubsub_to_doc(data: dict, vector_name:str="documents"):
     if message_data.startswith("gs://"):
         bucket_name, file_name = message_data[5:].split("/", 1)
 
+        # Create a client
+        storage_client = storage.Client()
+
         # Download the file from GCS
         bucket = storage_client.get_bucket(bucket_name)
         blob = bucket.blob(file_name)
@@ -147,6 +139,14 @@ def pubsub_to_doc(data: dict, vector_name:str="documents"):
         
 
         chunks = chunk_doc_to_docs([doc], ".txt")
+
+    # init embedding and vector store
+    supabase_url = os.getenv('SUPABASE_URL')
+    supabase_key = os.getenv('SUPABASE_KEY')
+
+    logging.debug(f"Supabase settings: {supabase_url} {supabase_key}")
+    embeddings = OpenAIEmbeddings()
+    supabase: Client = create_client(supabase_url, supabase_key)
 
     vector_store = SupabaseVectorStore(supabase, embeddings, table_name=vector_name)
 
