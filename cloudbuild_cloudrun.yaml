@@ -50,10 +50,10 @@ steps:
       - "-c"
       - |
         gcloud run services update ${_SERVICE_NAME}
-           --set-env-vars SUPABASE_URL=$$SUPABASE_URL \
-           --set-env-vars SUPABASE_KEY=$$SUPABASE_KEY \
-           --set-env-vars OPENAI_API_KEY=$$OPENAI_API_KEY \
-           --set-env-vars GCS_BUCKET=${_GCS_BUCKET}
+           --update-env-vars SUPABASE_URL=$$SUPABASE_URL \
+           --update-env-vars SUPABASE_KEY=$$SUPABASE_KEY \
+           --update-env-vars OPENAI_API_KEY=$$OPENAI_API_KEY \
+           --update-env-vars GCS_BUCKET=${_GCS_BUCKET}
     secretEnv: ["OPENAI_API_KEY", "SUPABASE_URL", "SUPABASE_KEY"]
 
 availableSecrets:
