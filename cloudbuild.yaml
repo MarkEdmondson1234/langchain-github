@@ -5,6 +5,9 @@ substitutions:
   _GCS_BUCKET: your-gcs-bucket
   _SERVICE_ACCOUNT: your-service@your-project.iam.gserviceaccount.com
 
+options:
+  machineType: 'N1_HIGHCPU_8'
+
 steps:
   # Build the Docker image, cached
   - name: "gcr.io/kaniko-project/executor:latest"
