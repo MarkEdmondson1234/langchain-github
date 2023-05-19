@@ -20,13 +20,11 @@ def pubsub_chunk_to_store(vector_name):
     if request.method == 'POST':
         data = request.get_json()
 
-        try:
-            # need to create a supabase table for each vector_name used
-            meta = pb.from_pubsub_to_supabase(data, vector_name)
-        except Exception as e:
-            return jsonify({"Error": str(e)}), 503
+        logging.info(f'Got pubsub chunk data: {data}')
 
-        return jsonify({"Success": meta}), 200
+        meta = pb.from_pubsub_to_supabase(data, vector_name)
+
+        return jsonify(meta), 200
 
 
 @app.route('/pubsub_to_store/<vector_name>', methods=['POST'])
