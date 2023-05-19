@@ -9,7 +9,7 @@ from flask import Flask, render_template, request, jsonify
 from qna import read_repo
 from qna import question_service
 from encoder_service import publish_to_pubsub_embed
-from encoder_service import pubsub_chunk_to_store
+from encoder_service import pubsub_chunk_to_store as pb
 import logging
 
 app = Flask(__name__)
@@ -22,7 +22,7 @@ def pubsub_chunk_to_store(vector_name):
 
         try:
             # need to create a supabase table for each vector_name used
-            meta = pubsub_chunk_to_store.pubsub_chunk_to_store(data, vector_name)
+            meta = pb.from_pubsub_to_supabase(data, vector_name)
         except Exception as e:
             return jsonify({"Error": str(e)}), 503
 
@@ -90,6 +90,11 @@ def process_files():
                 safe_filepath = os.path.join(temp_dir, file.filename)
                 logging.info(f'Saving file: {safe_filepath}')
                 file.save(safe_filepath)
+
+                vector_name = "edmonbrain"
+                gs_file = publish_to_pubsub_embed.add_file_to_gcs(safe_filepath, vector_name)
+                publish_to_pubsub_embed.publish_text(gs_file, vector_name, 
+                                                     metadata={"type": "webapp file upload"})
 
                 # we add document to the index
                 summary = send_document_to_index(safe_filepath, bucket_name)
@@ -164,7 +169,7 @@ def discord_files(vector_name):
             
             open(safe_file_name, 'wb').write(response.content)
 
-            gs_file = publish_to_pubsub_embed.add_file_to_gcs(safe_file_name)
+            gs_file = publish_to_pubsub_embed.add_file_to_gcs(safe_file_name, vector_name)
             publish_to_pubsub_embed.publish_text(gs_file, vector_name, 
                                                  metadata={"type": "discord file upload"})
             bot_output.append(f"{file_name} sent to Pubsub via {gs_file}")
