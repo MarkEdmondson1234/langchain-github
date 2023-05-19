@@ -64,7 +64,7 @@ class PubSubManager:
         if self.publisher and self.pubsub_topic:
             logging.debug("Message type:", type(message))
             message_json = json.dumps(message, default=lambda obj: obj.to_dict())
-            logging.debug(f"pubsub_message_json: {message_json}")
+            logging.info(f"pubsub_message_json: {message_json}")
             message_bytes = message_json.encode('utf-8')
             attr = {"namespace": str(self.memory_namespace)}
             future = self.publisher.publish(self.pubsub_topic, message_bytes, attrs=json.dumps(attr))

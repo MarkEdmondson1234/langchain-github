@@ -117,9 +117,9 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
     messageId = data['message'].get('messageId')
     publishTime = data['message'].get('publishTime')
 
-    print(f"data_to_embed_pubsub was triggered by messageId {messageId} published at {publishTime}")
+    logging.info(f"data_to_embed_pubsub was triggered by messageId {messageId} published at {publishTime}")
 
-    print(f"data_to_embed_pubsub data: {message_data}")
+    logging.info(f"data_to_embed_pubsub data: {message_data}")
 
     metadata = attributes
 

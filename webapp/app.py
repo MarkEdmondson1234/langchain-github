@@ -152,7 +152,7 @@ def discord_message(vector_name:str = None):
             source_documents.append(source_doc)
     
     discord_output = {
-        'result': bot_output["result"],
+        'result': bot_output['answer'],
         'source_documents': source_documents
     }
 
