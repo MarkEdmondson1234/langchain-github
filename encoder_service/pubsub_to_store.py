@@ -5,6 +5,7 @@ from langchain.document_loaders.unstructured import UnstructuredFileLoader
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.docstore.document import Document
 from google.cloud import storage
+from google.cloud import pubsub_v1
 import base64
 import langchain.text_splitter as text_splitter
 
@@ -15,6 +16,7 @@ import tempfile
 import hashlib
 from langchain.schema import Document
 import logging
+from my_llm.pubsub_manager import PubSubManager
 
 load_dotenv()
 
@@ -90,7 +92,7 @@ def chunk_doc_to_docs(documents: list, extension: str = ".md"):
 
         return source_chunks  
 
-def pubsub_to_doc(data: dict, vector_name:str="documents"):
+def pubsub_to_embedding_pubsub(data: dict, vector_name:str="documents"):
     """Triggered from a message on a Cloud Pub/Sub topic.
     Args:
          data JSON
@@ -105,6 +107,8 @@ def pubsub_to_doc(data: dict, vector_name:str="documents"):
     print(f"Message data: {message_data}")
 
     metadata = attributes
+
+    chunks = []
 
     if message_data.startswith("gs://"):
         bucket_name, file_name = message_data[5:].split("/", 1)
@@ -136,23 +140,16 @@ def pubsub_to_doc(data: dict, vector_name:str="documents"):
         metadata["type"] = "message"
         doc = Document(page_content=message_data, metadata=metadata)
         
-
         chunks = chunk_doc_to_docs([doc], ".txt")
 
-    logging.info("Initiating Supabase store")
-    # init embedding and vector store
-    supabase_url = os.getenv('SUPABASE_URL')
-    supabase_key = os.getenv('SUPABASE_KEY')
+    logging.info("Initiating Pubsub client")
+    pubsub_manager = PubSubManager(vector_name, pubsub_topic="embed_chunk")
+    for chunk in chunks:
+        # Convert chunk to string, as Pub/Sub messages must be strings or bytes
+        # Note: if your chunks contain non-string data, you will need to serialize them first (e.g. using json.dumps)
+        chunk_str = str(chunk)
+        pubsub_manager.publish_message(chunk_str)
 
-    logging.info(f"Supabase URL: {supabase_url}")
-    embeddings = OpenAIEmbeddings()
-    supabase: Client = create_client(supabase_url, supabase_key)
-
-    vector_store = SupabaseVectorStore(supabase, embeddings, table_name=vector_name)
-
-    logging.info("Adding document to Supabase")
-    vector_store.add_documents(chunks)
-
-    logging.info(f"Add doc with metadata: {metadata}")
+    logging.info(f"Published chunks with metadata: {metadata}")
 
     return metadata

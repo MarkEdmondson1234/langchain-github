@@ -27,7 +27,8 @@ class PubSubManager:
             logging.info(f"Project ID: {self.project_id}")
             # Create the Pub/Sub topic based on the project ID and memory_namespace
             self.publisher = pubsub_v1.PublisherClient()
-            self.pubsub_topic = pubsub_topic or f"projects/{self.project_id}/topics/chat-messages-{memory_namespace}"
+            self.pubsub_topic = f"projects/{self.project_id}/topics/{pubsub_topic}" or \
+                                f"projects/{self.project_id}/topics/chat-messages-{memory_namespace}"
             self._create_pubsub_topic_if_not_exists()
 
         else:
