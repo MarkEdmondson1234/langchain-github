@@ -163,7 +163,7 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
 
     return metadata
 
-def publish_chunks(chunks, vector_name: str):
+def publish_chunks(chunks: list[Document], vector_name: str):
     logging.info("Publishing chunks to embed_chunk")
     pubsub_manager = PubSubManager(vector_name, pubsub_topic="embed_chunk")
     for chunk in chunks:
@@ -171,7 +171,7 @@ def publish_chunks(chunks, vector_name: str):
         chunk_str = chunk.json()
         pubsub_manager.publish_message(chunk_str)
 
-def publish_text(text, vector_name: str):
+def publish_text(text:str, vector_name: str):
     logging.info(f"Publishing text to app_to_pubsub_{vector_name}")
     pubsub_manager = PubSubManager(vector_name, pubsub_topic=f"app_to_pubsub_{vector_name}")
     

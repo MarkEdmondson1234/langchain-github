@@ -17,6 +17,8 @@ app = Flask(__name__)
 # can only take up to 10 minutes to ack
 @app.route('/pubsub_chunk_to_store/<vector_name>', methods=['POST'])
 def pubsub_chunk_to_store(vector_name):
+    """
+    Final PubSub destination for each chunk that sends data to Supabase vectorstore"""
     if request.method == 'POST':
         data = request.get_json()
 
@@ -85,8 +87,7 @@ def process_files():
 
                 vector_name = "edmonbrain"
                 gs_file = publish_to_pubsub_embed.add_file_to_gcs(safe_filepath, vector_name)
-                publish_to_pubsub_embed.publish_text(gs_file, vector_name, 
-                                                     metadata={"type": "webapp file upload"})
+                publish_to_pubsub_embed.publish_text(gs_file, vector_name)
 
                 # we add document to the index
                 summary = send_document_to_index(safe_filepath, bucket_name)
