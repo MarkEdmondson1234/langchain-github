@@ -16,7 +16,7 @@ app = Flask(__name__)
 
 # can only take up to 10 minutes to ack
 @app.route('/pubsub_chunk_to_store/<vector_name>', methods=['POST'])
-def pubsub_to_doc(vector_name):
+def pubsub_chunk_to_store(vector_name):
     if request.method == 'POST':
         data = request.get_json()
 
@@ -30,7 +30,7 @@ def pubsub_to_doc(vector_name):
 
 
 @app.route('/pubsub_to_store/<vector_name>', methods=['POST'])
-def pubsub_to_doc(vector_name):
+def pubsub_to_store(vector_name):
     """
     splits up text or gs:// file into chunks and sends to pubsub topic 
       that pushes back to /pubsub_chunk_to_store/<vector_name>
@@ -119,14 +119,16 @@ def process_input():
     
     return bot_output
 
-@app.route('/discord/message', methods=['POST'])
-def discord_message():
+@app.route('/discord/message/<vector_name>', methods=['POST'])
+def discord_message(vector_name:str = None):
     data = request.get_json()
     user_input = data['content']  # Extract user input from the payload
-    bucket_name = os.getenv('GCS_BUCKET', None)
     chat_history = data.get('chat_history', None)
 
     print(f"discord_message: {data}")
+
+    if vector_name is None:
+        vector_name = "documents"
 
     if chat_history:
         # Separate the messages into human and AI messages
@@ -138,7 +140,7 @@ def discord_message():
         print("No chat history found")
         paired_messages = None
 
-    bot_output = question_service.qna(user_input, "edmonbrain", chat_history=paired_messages)
+    bot_output = question_service.qna(user_input, vector_name, chat_history=paired_messages)
     
     logging.info(f"bot_output: {bot_output}")
 
