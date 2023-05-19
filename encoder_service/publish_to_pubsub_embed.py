@@ -44,13 +44,14 @@ def add_file_to_gcs(filename: str, vector_name="qa_documents", bucket_name: str=
     
 
     bucket = storage_client.get_bucket(bucket_name)
+    bucket_filepath = f"{vector_name}/{os.path.basename(filename)}"
 
-    blob = bucket.blob(f"{vector_name}/{os.path.basename(filename)}")
+    blob = bucket.blob(bucket_filepath)
     blob.upload_from_filename(filename)
 
-    print(f"File {filename} uploaded to {bucket_name}.")
+    print(f"File {filename} uploaded to gs://{bucket_name}/{bucket_filepath}")
 
-    return f"gs://{bucket_name}/{filename}"
+    return f"gs://{bucket_name}/{bucket_filepath}"
 
 
 def read_file_to_document(gs_file: pathlib.Path, split=False, metadata: dict = None):

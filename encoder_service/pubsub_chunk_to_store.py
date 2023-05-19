@@ -13,11 +13,6 @@ import logging
 
 load_dotenv()
 
-def compute_sha1_from_content(content):
-    readable_hash = hashlib.sha1(content).hexdigest()
-    return readable_hash
-
-
 def from_pubsub_to_supabase(data: dict, vector_name:str="documents"):
     """Triggered from a message on a Cloud Pub/Sub topic.
     Will only attempt to send one chunk to vectorstore.  For bigger documents use pubsub_to_store.py
@@ -26,7 +21,9 @@ def from_pubsub_to_supabase(data: dict, vector_name:str="documents"):
     """
     logging.info(f"Got data: {data}")
     logging.info(f"Vectors store: {vector_name}")
-    
+
+    file_sha = data['message']['data']
+
     message_data = base64.b64decode(data['message']['data']).decode('utf-8')
     attributes = data['message'].get('attributes', {})
     messageId = data['message'].get('messageId')
@@ -38,8 +35,7 @@ def from_pubsub_to_supabase(data: dict, vector_name:str="documents"):
 
     metadata = attributes
 
-    hash = compute_sha1_from_content(message_data)
-    metadata["file_sha1"] = hash
+    metadata["file_sha1"] = file_sha
     metadata["type"] = "message"
     doc = Document(page_content=message_data, metadata=metadata)
 
