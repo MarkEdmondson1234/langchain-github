@@ -142,12 +142,12 @@ def discord_message(vector_name:str = None):
     
     logging.info(f"bot_output: {bot_output}")
 
-    if bot_output.get('source_documents',None) is not None:
+    if bot_output['source_documents'] is not None:
         source_documents = []
         for doc in bot_output['source_documents']:
             source_doc = {
-                'page_content': doc.get('page_content'),
-                'metadata': doc.get('metadata')
+                'page_content': doc.page_content,
+                'metadata': doc.metadata
             }
             source_documents.append(source_doc)
     
