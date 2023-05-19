@@ -123,7 +123,12 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
 
     metadata = attributes
 
+    logging.info(f"data_to_embed_pubsub metadata: {metadata}")
+
     chunks = []
+
+    if message_data.startswith('"gs://'):
+        message_data = message_data.strip('\"')
 
     if message_data.startswith("gs://"):
         logging.info("Detected gs://")
