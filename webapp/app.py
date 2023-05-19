@@ -151,7 +151,6 @@ def discord_message(vector_name:str = None):
 def discord_files(vector_name):
     data = request.get_json()
     attachments = data.get('attachments', [])
-    bucket_name = os.getenv('GCS_BUCKET', None)
 
     with tempfile.TemporaryDirectory() as temp_dir:
         # Handle file attachments
@@ -166,10 +165,9 @@ def discord_files(vector_name):
             open(safe_file_name, 'wb').write(response.content)
 
             gs_file = publish_to_pubsub_embed.add_file_to_gcs(safe_file_name)
-            meta = publish_to_pubsub_embed.data_to_embed_pubsub(gs_file, vector_name)
-
-            summary = send_document_to_index(safe_file_name, bucket_name)
-            bot_output.append(summary)
+            publish_to_pubsub_embed.publish_text(gs_file, vector_name, 
+                                                 metadata={"type": "discord file upload"})
+            bot_output.append(f"{file_name} sent to Pubsub via {gs_file}")
 
     # Format the response payload
     response_payload = {

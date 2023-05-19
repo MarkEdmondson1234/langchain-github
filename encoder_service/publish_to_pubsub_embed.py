@@ -34,7 +34,7 @@ def compute_sha1_from_content(content):
     readable_hash = hashlib.sha1(content).hexdigest()
     return readable_hash
 
-def add_file_to_gcs(filename: str, bucket_name: str=None):
+def add_file_to_gcs(filename: str, vector_name="qa_documents", bucket_name: str=None):
 
     storage_client = storage.Client()
 
@@ -45,7 +45,7 @@ def add_file_to_gcs(filename: str, bucket_name: str=None):
 
     bucket = storage_client.get_bucket(bucket_name)
 
-    blob = bucket.blob(filename)
+    blob = bucket.blob(f"{vector_name}/{os.path.basename(filename)}")
     blob.upload_from_filename(filename)
 
     print(f"File {filename} uploaded to {bucket_name}.")
@@ -120,6 +120,8 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
     print(f"Message data: {message_data}")
 
     metadata = attributes
+    metadata["message_id"] = messageId
+    metadata["publish_time"] = publishTime
 
     chunks = []
 
@@ -155,6 +157,13 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
         
         chunks = chunk_doc_to_docs([doc], ".txt")
 
+    publish_chunks(chunks, vector_name=vector_name)
+
+    logging.info(f"Published chunks with metadata: {metadata}")
+
+    return metadata
+
+def publish_chunks(chunks, vector_name: str):
     logging.info("Initiating Pubsub client")
     pubsub_manager = PubSubManager(vector_name, pubsub_topic="embed_chunk")
     for chunk in chunks:
@@ -162,6 +171,6 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
         chunk_str = chunk.json()
         pubsub_manager.publish_message(chunk_str)
 
-    logging.info(f"Published chunks with metadata: {metadata}")
-
-    return metadata
+def publish_text(text, vector_name: str, metadata = {}):
+    chunks = [Document(page_content=text, metadata=metadata)]
+    publish_chunks(chunks, vector_name)
