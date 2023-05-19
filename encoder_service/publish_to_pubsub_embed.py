@@ -1,16 +1,12 @@
 # imports
-import os, shutil
+import os, shutil, json
 import pathlib
 from langchain.document_loaders.unstructured import UnstructuredFileLoader
-from langchain.embeddings import OpenAIEmbeddings
 from langchain.docstore.document import Document
 from google.cloud import storage
-from google.cloud import pubsub_v1
 import base64
 import langchain.text_splitter as text_splitter
 
-from langchain.vectorstores import SupabaseVectorStore
-from supabase import Client, create_client
 from dotenv import load_dotenv
 import tempfile
 import hashlib
@@ -38,8 +34,25 @@ def compute_sha1_from_content(content):
     readable_hash = hashlib.sha1(content).hexdigest()
     return readable_hash
 
-# if message_data is a gcs:// filepath, download that file from google cloud storage
-#  and parse it using below
+def add_file_to_gcs(filename: str, bucket_name: str=None):
+
+    storage_client = storage.Client()
+
+    bucket_name = bucket_name if bucket_name is not None else os.getenv('GCS_BUCKET', None)
+    if bucket_name is None:
+        raise ValueError("No bucket found to upload to: GCS_BUCKET returned None")
+    
+
+    bucket = storage_client.get_bucket(bucket_name)
+
+    blob = bucket.blob(filename)
+    blob.upload_from_filename(filename)
+
+    print(f"File {filename} uploaded to {bucket_name}.")
+
+    return f"gs://{bucket_name}/{filename}"
+
+
 def read_file_to_document(gs_file: pathlib.Path, split=False, metadata: dict = None):
     if not gs_file.is_file():
         raise ValueError(f"{gs_file.filename} is not a valid file")
@@ -92,7 +105,7 @@ def chunk_doc_to_docs(documents: list, extension: str = ".md"):
 
         return source_chunks  
 
-def pubsub_to_embedding_pubsub(data: dict, vector_name:str="documents"):
+def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
     """Triggered from a message on a Cloud Pub/Sub topic.
     Args:
          data JSON
@@ -146,8 +159,7 @@ def pubsub_to_embedding_pubsub(data: dict, vector_name:str="documents"):
     pubsub_manager = PubSubManager(vector_name, pubsub_topic="embed_chunk")
     for chunk in chunks:
         # Convert chunk to string, as Pub/Sub messages must be strings or bytes
-        # Note: if your chunks contain non-string data, you will need to serialize them first (e.g. using json.dumps)
-        chunk_str = str(chunk)
+        chunk_str = chunk.json()
         pubsub_manager.publish_message(chunk_str)
 
     logging.info(f"Published chunks with metadata: {metadata}")

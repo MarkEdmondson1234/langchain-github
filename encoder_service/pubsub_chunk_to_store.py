@@ -18,7 +18,7 @@ def compute_sha1_from_content(content):
     return readable_hash
 
 
-def pubsub_chunk_to_doc(data: dict, vector_name:str="documents"):
+def pubsub_chunk_to_store(data: dict, vector_name:str="documents"):
     """Triggered from a message on a Cloud Pub/Sub topic.
     Will only attempt to send one chunk to vectorstore.  For bigger documents use pubsub_to_store.py
     Args:

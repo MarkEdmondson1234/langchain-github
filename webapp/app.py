@@ -7,20 +7,40 @@ sys.path.append(parent_dir)
 # app.py
 from flask import Flask, render_template, request, jsonify
 from qna import read_repo
-from encoder_service import pubsub_to_store
+from qna import question_service
+from encoder_service import publish_to_pubsub_embed
+from encoder_service import pubsub_chunk_to_store
 import logging
 
 app = Flask(__name__)
 
 # can only take up to 10 minutes to ack
-@app.route('/pubsub_to_store/<vector_name>', methods=['POST'])
+@app.route('/pubsub_chunk_to_store/<vector_name>', methods=['POST'])
 def pubsub_to_doc(vector_name):
     if request.method == 'POST':
         data = request.get_json()
 
         try:
             # need to create a supabase table for each vector_name used
-            meta = pubsub_to_store.pubsub_to_doc(data, vector_name)
+            meta = pubsub_chunk_to_store.pubsub_chunk_to_store(data, vector_name)
+        except Exception as e:
+            return jsonify({"Error": str(e)}), 503
+
+        return jsonify({"Success": meta}), 200
+
+
+@app.route('/pubsub_to_store/<vector_name>', methods=['POST'])
+def pubsub_to_doc(vector_name):
+    """
+    splits up text or gs:// file into chunks and sends to pubsub topic 
+      that pushes back to /pubsub_chunk_to_store/<vector_name>
+    """
+    if request.method == 'POST':
+        data = request.get_json()
+
+        try:
+            # need to create a supabase table for each vector_name used
+            meta = publish_to_pubsub_embed.data_to_embed_pubsub(data, vector_name)
         except Exception as e:
             return jsonify({"Error": str(e)}), 503
 
@@ -118,12 +138,7 @@ def discord_message():
         print("No chat history found")
         paired_messages = None
 
-    # we ask the bot a question about the documents in the vectorstore
-    bot_output = read_repo.process_input(
-        user_input=user_input,
-        verbose=True,
-        bucket_name=bucket_name,
-        chat_history=paired_messages)
+    bot_output = question_service.qna(user_input, "edmonbrain", chat_history=paired_messages)
     
     logging.info(f"bot_output: {bot_output}")
 
@@ -147,6 +162,9 @@ def discord_files():
             response = requests.get(file_url)
             
             open(safe_file_name, 'wb').write(response.content)
+
+            gs_file = publish_to_pubsub_embed.add_file_to_gcs(safe_file_name)
+            meta = publish_to_pubsub_embed.data_to_embed_pubsub(gs_file, "edmonbrain")
 
             summary = send_document_to_index(safe_file_name, bucket_name)
             bot_output.append(summary)
