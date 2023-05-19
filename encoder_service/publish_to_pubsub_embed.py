@@ -117,17 +117,16 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
     messageId = data['message'].get('messageId')
     publishTime = data['message'].get('publishTime')
 
-    print(f"This Function was triggered by messageId {messageId} published at {publishTime}")
+    print(f"data_to_embed_pubsub was triggered by messageId {messageId} published at {publishTime}")
 
-    print(f"Message data: {message_data}")
+    print(f"data_to_embed_pubsub data: {message_data}")
 
     metadata = attributes
-    metadata["message_id"] = messageId
-    metadata["publish_time"] = publishTime
 
     chunks = []
 
     if message_data.startswith("gs://"):
+        logging.info("Detected gs://")
         bucket_name, file_name = message_data[5:].split("/", 1)
 
         # Create a client
@@ -151,7 +150,7 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
         chunks = chunk_doc_to_docs(docs, doc_path.suffix)
 
     else:
-
+        logging.info("No gs:// detected")
         metadata["file_sha1"] = hash
         metadata["type"] = "message"
         doc = Document(page_content=message_data, metadata=metadata)
@@ -160,20 +159,20 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
 
     publish_chunks(chunks, vector_name=vector_name)
 
-    logging.info(f"Published chunks with metadata: {metadata}")
+    logging.info(f"data_to_embed_pubsub published chunks with metadata: {metadata}")
 
     return metadata
 
 def publish_chunks(chunks, vector_name: str):
-    logging.info("Initiating Pubsub client")
+    logging.info("Publishing chunks to embed_chunk")
     pubsub_manager = PubSubManager(vector_name, pubsub_topic="embed_chunk")
     for chunk in chunks:
         # Convert chunk to string, as Pub/Sub messages must be strings or bytes
         chunk_str = chunk.json()
         pubsub_manager.publish_message(chunk_str)
 
-def publish_text(text, vector_name: str, metadata = {}):
-
+def publish_text(text, vector_name: str):
+    logging.info(f"Publishing text to app_to_pubsub_{vector_name}")
     pubsub_manager = PubSubManager(vector_name, pubsub_topic=f"app_to_pubsub_{vector_name}")
     
     pubsub_manager.publish_message(text)

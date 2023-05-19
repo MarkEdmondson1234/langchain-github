@@ -163,6 +163,7 @@ def discord_files(vector_name):
     data = request.get_json()
     attachments = data.get('attachments', [])
 
+    logging.info(f'discord_files got data: {data}')
     with tempfile.TemporaryDirectory() as temp_dir:
         # Handle file attachments
         bot_output = []

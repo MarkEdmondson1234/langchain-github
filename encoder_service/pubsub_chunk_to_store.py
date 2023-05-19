@@ -18,7 +18,7 @@ def from_pubsub_to_supabase(data: dict, vector_name:str="documents"):
     Args:
          data JSON
     """
-    logging.info(f"Got data: {data}")
+    logging.info(f"from_pubsub_to_supabase got data: {data}")
     logging.info(f"vectorstore: {vector_name}")
 
     file_sha = data['message']['data']
@@ -30,7 +30,7 @@ def from_pubsub_to_supabase(data: dict, vector_name:str="documents"):
 
     print(f"This Function was triggered by messageId {messageId} published at {publishTime}")
 
-    print(f"Message data: {message_data}")
+    print(f"from_pubsub_to_supabase message data: {message_data}")
 
     metadata = attributes
 
