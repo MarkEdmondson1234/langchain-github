@@ -12,15 +12,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-def get_chat_history(inputs) -> str:
-    if inputs is None:
-        return None
-    
-    res = []
-    for human, ai in inputs:
-        res.append(f"Human:{human}\nAI:{ai}")
-    return "\n".join(res)
-
 def qna(question: str, vector_name: str, chat_history=None):
 
     logging.info("Initiating Supabase store")
@@ -38,10 +29,8 @@ def qna(question: str, vector_name: str, chat_history=None):
 
     llm = OpenAI(temperature=0)
 
-    history = get_chat_history(chat_history)
-
     qa = ConversationalRetrievalChain.from_llm(llm, retriever=retriever, return_source_documents=True)
 
-    result = qa({"question": question, "chat_history": history})
+    result = qa({"question": question, "chat_history": chat_history})
     
     return result
