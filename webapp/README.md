@@ -64,6 +64,15 @@ I couldn't make it work permissions with to read every message in a channel, but
 
 ![](img/discord-llm-bit.png)
 
+### Routing
+
+1. User adds file and it is sent to /discord/<vector_name>/files
+2. /discord/<vector_name>/files sends each file to encoder_service/publish_to_pubsub_embed.add_file_to_gcs and generates gs:// filename
+3. /discord/<vector_name>/files then sends filename to PubSub topic `app_to_pubsub_<vector_name>` via publish_text()
+4. PubSub subscription `pubsub_to_app_chunk_<edmonbrain>` pushes filename to `/pubsub_to_store/<vector_name>`
+5. `/pubsub_to_store/<vector_name>` chunks up data and sends to PubSub topic "embed_chunk"
+6. "embed_chunk" sends data to sub pubsub_to_store_edmonbrain and then to /pubsub_chunk_to_store/edmonbrain which sends each chunk to Supabase
+
 ## Slackbot
 
 Can only accept inputs and outputs

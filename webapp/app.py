@@ -20,8 +20,6 @@ def pubsub_chunk_to_store(vector_name):
     if request.method == 'POST':
         data = request.get_json()
 
-        logging.info(f'Got pubsub chunk data: {data}')
-
         meta = pb.from_pubsub_to_supabase(data, vector_name)
 
         return jsonify(meta), 200
@@ -36,13 +34,9 @@ def pubsub_to_store(vector_name):
     if request.method == 'POST':
         data = request.get_json()
 
-        try:
-            # need to create a supabase table for each vector_name used
-            meta = publish_to_pubsub_embed.data_to_embed_pubsub(data, vector_name)
-        except Exception as e:
-            return jsonify({"Error": str(e)}), 503
-
-        return jsonify({"Success": meta}), 200
+        meta = publish_to_pubsub_embed.data_to_embed_pubsub(data, vector_name)
+        
+        return jsonify(meta), 200
 
 
 @app.route('/', methods=['GET'])
@@ -147,8 +141,23 @@ def discord_message(vector_name:str = None):
     
     logging.info(f"bot_output: {bot_output}")
 
+    if bot_output.get('source_documents', None) is not None:
+        source_documents = []
+        for doc in bot_output.get('source_documents'):
+            source_doc = {
+                'page_content': doc.get('page_content'),
+                'metadata': doc.get('metadata')
+            }
+            source_documents.append(source_doc)
+    
+    discord_output = {
+        'result': bot_output['result'],
+        'source_documents': source_documents
+
+    }
+
     # may be over 4000 char limit for discord but discord bot chunks it up for output
-    return jsonify(bot_output)
+    return jsonify(discord_output)
 
 @app.route('/discord/<vector_name>/files', methods=['POST'])
 def discord_files(vector_name):

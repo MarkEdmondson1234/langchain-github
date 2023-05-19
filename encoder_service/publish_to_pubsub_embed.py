@@ -173,5 +173,9 @@ def publish_chunks(chunks, vector_name: str):
         pubsub_manager.publish_message(chunk_str)
 
 def publish_text(text, vector_name: str, metadata = {}):
-    chunks = [Document(page_content=text, metadata=metadata)]
-    publish_chunks(chunks, vector_name)
+    chunk = [Document(page_content=text, metadata=metadata)]
+
+    pubsub_manager = PubSubManager(vector_name, pubsub_topic=f"app_to_pubsub_{vector_name}")
+    
+    chunk_str = chunk.json()
+    pubsub_manager.publish_message(chunk_str)
