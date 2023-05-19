@@ -119,7 +119,7 @@ def process_input():
     
     return bot_output
 
-@app.route('/discord/message/<vector_name>', methods=['POST'])
+@app.route('/discord/<vector_name>/message', methods=['POST'])
 def discord_message(vector_name:str = None):
     data = request.get_json()
     user_input = data['content']  # Extract user input from the payload
@@ -147,8 +147,8 @@ def discord_message(vector_name:str = None):
     # may be over 4000 char limit for discord but discord bot chunks it up for output
     return jsonify(bot_output)
 
-@app.route('/discord/files', methods=['POST'])
-def discord_files():
+@app.route('/discord/<vector_name>/files', methods=['POST'])
+def discord_files(vector_name):
     data = request.get_json()
     attachments = data.get('attachments', [])
     bucket_name = os.getenv('GCS_BUCKET', None)
@@ -166,7 +166,7 @@ def discord_files():
             open(safe_file_name, 'wb').write(response.content)
 
             gs_file = publish_to_pubsub_embed.add_file_to_gcs(safe_file_name)
-            meta = publish_to_pubsub_embed.data_to_embed_pubsub(gs_file, "edmonbrain")
+            meta = publish_to_pubsub_embed.data_to_embed_pubsub(gs_file, vector_name)
 
             summary = send_document_to_index(safe_file_name, bucket_name)
             bot_output.append(summary)
