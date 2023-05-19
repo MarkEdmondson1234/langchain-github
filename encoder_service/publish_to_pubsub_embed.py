@@ -56,7 +56,7 @@ def add_file_to_gcs(filename: str, vector_name="qa_documents", bucket_name: str=
 
 def read_file_to_document(gs_file: pathlib.Path, split=False, metadata: dict = None):
     if not gs_file.is_file():
-        raise ValueError(f"{gs_file.filename} is not a valid file")
+        raise ValueError(f"{gs_file.name} is not a valid file")
     
     file_sha1 = compute_sha1_from_file(gs_file.name)
     
