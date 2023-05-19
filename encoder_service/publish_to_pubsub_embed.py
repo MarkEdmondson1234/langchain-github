@@ -111,6 +111,7 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
     Args:
          data JSON
     """
+    hash = data['message']['data']
     message_data = base64.b64decode(data['message']['data']).decode('utf-8')
     attributes = data['message'].get('attributes', {})
     messageId = data['message'].get('messageId')
@@ -151,7 +152,6 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
 
     else:
 
-        hash = compute_sha1_from_content(message_data)
         metadata["file_sha1"] = hash
         metadata["type"] = "message"
         doc = Document(page_content=message_data, metadata=metadata)

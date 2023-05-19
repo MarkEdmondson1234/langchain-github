@@ -7,7 +7,6 @@ import base64
 from langchain.vectorstores import SupabaseVectorStore
 from supabase import Client, create_client
 from dotenv import load_dotenv
-import hashlib
 from langchain.schema import Document
 import logging
 
