@@ -21,7 +21,7 @@ def from_pubsub_to_supabase(data: dict, vector_name:str):
     logging.info(f"from_pubsub_to_supabase got data: {data}")
     logging.info(f"vectorstore: {vector_name}")
 
-    file_sha = data['message']['data']
+    #file_sha = data['message']['data']
 
     message_data = base64.b64decode(data['message']['data']).decode('utf-8')
     attributes = data['message'].get('attributes', {})
@@ -31,12 +31,15 @@ def from_pubsub_to_supabase(data: dict, vector_name:str):
     print(f"This Function was triggered by messageId {messageId} published at {publishTime}")
 
     print(f"from_pubsub_to_supabase message data: {message_data}")
+    page_content = message_data.get("page_content", None)
+    if page_content is None:
+        return "No page content"
+    
+    metadata = page_content.get("metadata", None)
+    if metadata is not None:
+        metadata["attributes"] = attributes
 
-    metadata = attributes
-
-    metadata["file_sha1"] = file_sha
-    metadata["type"] = "message"
-    doc = Document(page_content=message_data, metadata=metadata)
+    doc = Document(page_content=page_content, metadata=metadata)
 
     logging.info("Initiating Supabase store")
     # init embedding and vector store
