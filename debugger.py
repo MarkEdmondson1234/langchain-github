@@ -1,5 +1,18 @@
 #!/Users/mark/dev/ml/langchain/read_github/langchain_github/env/bin/python
 # change above to the location of your local Python venv installation
+import os, logging
+
+from langchain.vectorstores import SupabaseVectorStore
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.llms import OpenAI
+
+#https://python.langchain.com/en/latest/modules/chains/index_examples/chat_vector_db.html
+from langchain.chains import ConversationalRetrievalChain
+
+from supabase import Client, create_client
+from dotenv import load_dotenv
+
+load_dotenv()
 
 import os
 import my_llm.standards as my_llm
@@ -34,11 +47,15 @@ print("Creating client")
 supabase: Client = create_client(supabase_url, supabase_key)
 
 print("Initiating vectorstore")
-vector_store = SupabaseVectorStore(supabase, embeddings, table_name="documents")
+vector_store = SupabaseVectorStore(supabase, embeddings, table_name="edmonbrain")
 
-chunks = [Document(page_content="debugging1"), Document(page_content="debugging2")]
+retriever = vector_store.as_retriever(search_kwargs=dict(k=4))
 
-vector_store.add_documents(chunks)
+llm = OpenAI(temperature=0)
 
-print("Added texts")
+qa = ConversationalRetrievalChain.from_llm(llm, retriever=retriever, return_source_documents=True)
+
+result = qa({"question": "do you know anything about coor?", "chat_history": ""})
+
+print(result)
 

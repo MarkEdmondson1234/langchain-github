@@ -142,9 +142,15 @@ def discord_message(vector_name):
     if bot_output['source_documents'] is not None:
         source_documents = []
         for doc in bot_output['source_documents']:
+            metadata = doc.metadata
+            filtered_metadata = {}
+            if metadata["source"] is not None:
+                filtered_metadata["source"] = metadata["source"]
+            if metadata["type"] is not None:
+                filtered_metadata["type"] = metadata["type"]
             source_doc = {
                 'page_content': doc.page_content,
-                'metadata': doc.metadata
+                'metadata': filtered_metadata
             }
             source_documents.append(source_doc)
     
