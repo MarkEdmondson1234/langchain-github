@@ -31,7 +31,10 @@ def qna(question: str, vector_name: str, chat_history=None):
 
     llm = OpenAI(temperature=0)
 
-    qa = ConversationalRetrievalChain.from_llm(llm, retriever=retriever, return_source_documents=True)
+    qa = ConversationalRetrievalChain.from_llm(llm, 
+                                               retriever=retriever, 
+                                               return_source_documents=True,
+                                               verbose=True)
 
     result = qa({"question": question, "chat_history": chat_history})
     

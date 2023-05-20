@@ -50,6 +50,8 @@ async def on_message(message):
 
         history = []
         async for msg in new_thread.history(limit=50):
+            if msg.content.startswith(f"Reply to {bot_mention}"):
+                continue
             history.append(msg)
 
         # Reverse the messages to maintain the order of conversation
