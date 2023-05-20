@@ -4,6 +4,8 @@ from encoder_service import publish_to_pubsub_embed
 def app_to_store(safe_file_name, vector_name):
     gs_file = publish_to_pubsub_embed.add_file_to_gcs(safe_file_name, vector_name)
     publish_to_pubsub_embed.publish_text(gs_file, vector_name)
+
+    return gs_file
     
 def handle_files(uploaded_files, temp_dir, vector_name):
     bot_output = []

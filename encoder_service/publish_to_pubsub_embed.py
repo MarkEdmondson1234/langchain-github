@@ -13,6 +13,8 @@ import hashlib
 from langchain.schema import Document
 import logging
 from my_llm.pubsub_manager import PubSubManager
+import datetime
+
 
 load_dotenv()
 
@@ -44,12 +46,17 @@ def add_file_to_gcs(filename: str, vector_name="qa_documents", bucket_name: str=
     
 
     bucket = storage_client.get_bucket(bucket_name)
-    bucket_filepath = f"{vector_name}/{os.path.basename(filename)}"
+    now = datetime.datetime.now()
+    year = now.strftime("%Y")
+    month = now.strftime("%m")
+    day = now.strftime("%d") 
+    time = now.strftime("%H%M%S")
+    bucket_filepath = f"{vector_name}/{year}/{month}/{day}/{time}_{os.path.basename(filename)}"
 
     blob = bucket.blob(bucket_filepath)
     blob.upload_from_filename(filename)
 
-    print(f"File {filename} uploaded to gs://{bucket_name}/{bucket_filepath}")
+    logging.info(f"File {filename} uploaded to gs://{bucket_name}/{bucket_filepath}")
 
     return f"gs://{bucket_name}/{bucket_filepath}"
 
@@ -148,7 +155,8 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
             metadata = {
                 "source": file_name,
                 "type": "file_load_gcs",
-                "bucket_name": bucket_name
+                "bucket_name": bucket_name,
+                "bucket_uri": message_data
             }
 
             docs = read_file_to_document(tmp_file_path, metadata=metadata)

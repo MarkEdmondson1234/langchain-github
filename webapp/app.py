@@ -97,8 +97,8 @@ def discord_files(vector_name):
             
             open(safe_file_name, 'wb').write(response.content)
 
-            bot_help.app_to_store(safe_file_name, vector_name)
-            bot_output.append(f"{file_name} sent to {vector_name}")
+            gs_file = bot_help.app_to_store(safe_file_name, vector_name)
+            bot_output.append(f"{file_name} uploaded to {gs_file}")
 
     # Format the response payload
     response_payload = {

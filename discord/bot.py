@@ -27,20 +27,29 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    if client.user not in message.mentions:
-        return
+    print(message)
 
     if message.content:
         print(f'Got the message: {message.content}')
 
-        # Start a new thread with the received message
-        new_thread = await message.start_thread(name="Edmonbrain thread")
+        bot_mention = client.user.mention
+        clean_content = message.content.replace(bot_mention, '')
+
+        # Check if the message was sent in a thread
+        if isinstance(message.channel, discord.Thread):
+            new_thread = message.channel
+        else:
+            # If it's not a thread, create a new one
+            new_thread = await message.channel.create_thread(
+                name=clean_content[:20], 
+                message=message)
+
 
         # Send a thinking message
         thinking_message = await new_thread.send("Thinking...")
 
         history = []
-        async for msg in message.channel.history(limit=10):
+        async for msg in new_thread.history(limit=50):
             history.append(msg)
 
         # Reverse the messages to maintain the order of conversation
@@ -54,7 +63,7 @@ async def on_message(message):
         flask_app_url = f'{FLASKURL}/discord/edmonbrain/message'
         print(f'Calling {flask_app_url}')
         payload = {
-            'content': message.content,
+            'content': clean_content,
             'chat_history': chat_history
         }
 
@@ -79,26 +88,27 @@ async def on_message(message):
 
                     for source in unique_source_docs:
                         source_message = f"*source metadata*: {source.get('metadata')}"
-                        await chunk_send(new_thread source_message)
+                        await chunk_send(new_thread, source_message)
 
                     # Edit the thinking message to show the reply
-                    await new_thread.edit(content=reply_content)
+                    await thinking_message.edit(content=reply_content)
+                    await new_thread.send(f"Reply to {bot_mention} within this thread to continue")
                 else:
                     # Edit the thinking message to show an error
-                    await new_thread.edit(content="Error in processing message.")
+                    await thinking_message.edit(content="Error in processing message.")
 
     if message.attachments:
-        # Start a new thread with the received message
-        new_thread2 = await message.start_thread(name="Edmonbrain upload")
 
         # Send a thinking message
-        thinking_message = await new_thread2.send("Uploading file(s)..")
+        thinking_message2 = await new_thread.send("Uploading file(s)..")
 
         # Forward the attachments to Flask app
         flask_app_url = f'{FLASKURL}/discord/edmonbrain/files'
         print(f'Calling {flask_app_url}')
         payload = {
-            'attachments': [{'url': attachment.url, 'filename': attachment.filename} for attachment in message.attachments]
+            'attachments': [{'url': attachment.url, 'filename': attachment.filename} for attachment in message.attachments],
+            'content': clean_content,
+            'chat_history': chat_history
         }
         async with aiohttp.ClientSession() as session:
             async with session.post(flask_app_url, json=payload) as response:
@@ -109,9 +119,9 @@ async def on_message(message):
                     summaries = response_data.get('summaries', [])
                     for summary in summaries:
                         await chunk_send(new_thread2, summary)
-                    await thinking_message.edit(content="Uploaded file(s)")
+                    await thinking_message2.edit(content="Uploaded file(s)")
                 else:
                     # Edit the thinking message to show an error
-                    await thinking_message.edit(content="Error in processing file(s).")
+                    await thinking_message2.edit(content="Error in processing file(s).")
 
 client.run(TOKEN)

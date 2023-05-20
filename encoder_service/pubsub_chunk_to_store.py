@@ -28,8 +28,8 @@ def from_pubsub_to_supabase(data: dict, vector_name:str):
     messageId = data['message'].get('messageId')
     publishTime = data['message'].get('publishTime')
 
-    logging.info(f"This Function was triggered by messageId {messageId} published at {publishTime}")
-    logging.info(f"from_pubsub_to_supabase message data: {message_data}")
+    logging.debug(f"This Function was triggered by messageId {messageId} published at {publishTime}")
+    logging.debug(f"from_pubsub_to_supabase message data: {message_data}")
 
     the_json = json.loads(message_data)
 
@@ -44,7 +44,7 @@ def from_pubsub_to_supabase(data: dict, vector_name:str):
 
     doc = Document(page_content=page_content, metadata=metadata)
 
-    logging.info("Initiating Supabase store")
+    logging.debug("Initiating Supabase store")
     # init embedding and vector store
     supabase_url = os.getenv('SUPABASE_URL')
     supabase_key = os.getenv('SUPABASE_KEY')
@@ -58,7 +58,7 @@ def from_pubsub_to_supabase(data: dict, vector_name:str):
                                        table_name=vector_name,
                                        query_name=f"match_documents_{vector_name}")
 
-    logging.info("Adding single document to Supabase")
+    logging.debug("Adding single document to Supabase")
     vector_store.add_documents([doc])
 
     logging.info(f"Added doc with metadata: {metadata}")
