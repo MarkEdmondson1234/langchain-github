@@ -32,7 +32,7 @@ def from_pubsub_to_supabase(data: dict, vector_name:str):
     logging.info(f"This Function was triggered by messageId {messageId} published at {publishTime}")
 
     logging.info(f"from_pubsub_to_supabase message data: {message_data}")
-    the_json = json.loads(message_data)
+    the_json = json.loads(json.loads(message_data))
     page_content = the_json.get("page_content", None)
     if page_content is None:
         return "No page content"
