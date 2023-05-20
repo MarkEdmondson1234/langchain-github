@@ -182,7 +182,7 @@ def discord_files(vector_name):
 
             gs_file = publish_to_pubsub_embed.add_file_to_gcs(safe_file_name, vector_name)
             publish_to_pubsub_embed.publish_text(gs_file, vector_name)
-            bot_output.append(f"{file_name} sent to Pubsub via {gs_file}")
+            bot_output.append(f"{file_name} sent to {vector_name} via {gs_file}")
 
     # Format the response payload
     response_payload = {
