@@ -3,6 +3,7 @@ import os
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.docstore.document import Document
 import base64
+import json
 
 from langchain.vectorstores import SupabaseVectorStore
 from supabase import Client, create_client
@@ -31,7 +32,8 @@ def from_pubsub_to_supabase(data: dict, vector_name:str):
     print(f"This Function was triggered by messageId {messageId} published at {publishTime}")
 
     print(f"from_pubsub_to_supabase message data: {message_data}")
-    page_content = message_data.get("page_content", None)
+    the_json = json.loads(message_data)
+    page_content = the_json.get("page_content", None)
     if page_content is None:
         return "No page content"
     
