@@ -118,15 +118,12 @@ def process_input():
     return bot_output
 
 @app.route('/discord/<vector_name>/message', methods=['POST'])
-def discord_message(vector_name:str = None):
+def discord_message(vector_name):
     data = request.get_json()
     user_input = data['content']  # Extract user input from the payload
     chat_history = data.get('chat_history', None)
 
-    print(f"discord_message: {data}")
-
-    if vector_name is None:
-        vector_name = "documents"
+    logging.info(f"discord_message: {data}")
 
     if chat_history:
         # Separate the messages into human and AI messages

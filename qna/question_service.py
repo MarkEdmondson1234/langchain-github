@@ -19,7 +19,7 @@ def qna(question: str, vector_name: str, chat_history=None):
     supabase_url = os.getenv('SUPABASE_URL')
     supabase_key = os.getenv('SUPABASE_KEY')
 
-    logging.info(f"Supabase URL: {supabase_url}")
+    logging.info(f"Supabase URL: {supabase_url} vector_name: {vector_name}")
     embeddings = OpenAIEmbeddings()
     supabase: Client = create_client(supabase_url, supabase_key)
 
