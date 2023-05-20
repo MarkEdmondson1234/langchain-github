@@ -12,7 +12,7 @@ import logging
 
 load_dotenv()
 
-def from_pubsub_to_supabase(data: dict, vector_name:str="documents"):
+def from_pubsub_to_supabase(data: dict, vector_name:str):
     """Triggered from a message on a Cloud Pub/Sub topic "embed_chunk" topic
     Will only attempt to send one chunk to vectorstore.  For bigger documents use pubsub_to_store.py
     Args:

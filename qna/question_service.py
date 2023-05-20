@@ -14,7 +14,7 @@ load_dotenv()
 
 def qna(question: str, vector_name: str, chat_history=None):
 
-    logging.info("Initiating Supabase store")
+    logging.info(f"Initiating Supabase store: {vector_name}")
     # init embedding and vector store
     supabase_url = os.getenv('SUPABASE_URL')
     supabase_key = os.getenv('SUPABASE_KEY')
@@ -24,6 +24,8 @@ def qna(question: str, vector_name: str, chat_history=None):
     supabase: Client = create_client(supabase_url, supabase_key)
 
     vectorstore = SupabaseVectorStore(supabase, embeddings, table_name=vector_name)
+
+    logging.info(f"vectorstore.table_name {vectorstore.table_name}")
 
     retriever = vectorstore.as_retriever(search_kwargs=dict(k=4))
 
