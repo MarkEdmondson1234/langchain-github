@@ -144,9 +144,9 @@ def discord_message(vector_name):
         for doc in bot_output['source_documents']:
             metadata = doc.metadata
             filtered_metadata = {}
-            if metadata["source"] is not None:
+            if metadata.get("source", None) is not None:
                 filtered_metadata["source"] = metadata["source"]
-            if metadata["type"] is not None:
+            if metadata.get("type", None) is not None:
                 filtered_metadata["type"] = metadata["type"]
             source_doc = {
                 'page_content': doc.page_content,
