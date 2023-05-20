@@ -155,10 +155,12 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
     else:
         logging.info("No gs:// detected")
         #metadata["file_sha1"] = hash
-        metadata["type"] = "message"
-        doc = Document(page_content=message_data, metadata=metadata)
         
-        chunks = chunk_doc_to_docs([doc], ".txt")
+        the_json = json.loads(message_data)
+        metadata = the_json.get("metadata", None)
+        doc = Document(page_content=the_json.get("page_content", None), metadata=metadata)
+        
+        chunks = chunk_doc_to_docs([doc])
 
     publish_chunks(chunks, vector_name=vector_name)
 

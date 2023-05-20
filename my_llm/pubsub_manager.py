@@ -55,17 +55,17 @@ class PubSubManager:
         except Exception as e:
             logging.error(f"Failed to publish message: {e}")
 
-    def publish_message(self, message, verbose=False):
+    def publish_message(self, message:str, verbose=False):
         """Publishes the given data to Google Pub/Sub."""
 
         if verbose or self.verbose:
             verbose = True
         
+        if isinstance(message, dict):
+                message = json.dumps(message)
+        
         if self.publisher and self.pubsub_topic:
-            logging.debug("Message type:", type(message))
-            message_json = json.dumps(message, default=lambda obj: obj.to_dict())
-            logging.info(f"pubsub_message_json: {message_json}")
-            message_bytes = message_json.encode('utf-8')
+            message_bytes = message.encode('utf-8')
             attr = {"namespace": str(self.memory_namespace)}
             future = self.publisher.publish(self.pubsub_topic, message_bytes, attrs=json.dumps(attr))
             future.add_done_callback(self._callback)
