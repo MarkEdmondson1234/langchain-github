@@ -119,7 +119,7 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
 
     logging.info(f"data_to_embed_pubsub data: {message_data}")
 
-    metadata = attributes
+    metadata = {}
 
     logging.info(f"data_to_embed_pubsub metadata: {metadata}")
 
@@ -145,16 +145,17 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
             tmp_file_path = os.path.join(temp_dir, file_name.name)
             blob.download_to_filename(tmp_file_path)
 
-            metadata = attributes
-            metadata["source"] = file_name
-            metadata["type"] = "file_load_gcs"
+            metadata = {
+                "source": file_name,
+                "type": "file_load_gcs",
+                "bucket_name": bucket_name
+            }
 
             docs = read_file_to_document(tmp_file_path, metadata=metadata)
             chunks = chunk_doc_to_docs(docs, file_name.suffix)
 
     else:
         logging.info("No gs:// detected")
-        #metadata["file_sha1"] = hash
         
         the_json = json.loads(message_data)
         metadata = the_json.get("metadata", None)

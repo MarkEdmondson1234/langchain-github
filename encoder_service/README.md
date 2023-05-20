@@ -1,9 +1,9 @@
 # Supabase setup
 
-In addition to the normal setup instructions, make sure the SQL functions are also referring to the correct database.  So you need one Supacebase URL per bot, basically.
+In addition to the normal setup instructions, make sure the SQL functions are also referring to the correct matching function, which is called "match_documents_<vector_name>" e.g. below for "edmonbrain":
 
 ```sql
-CREATE OR REPLACE FUNCTION match_documents(query_embedding vector(1536), match_count int)
+CREATE OR REPLACE FUNCTION match_documents_edmonbrain(query_embedding vector(1536), match_count int)
            RETURNS TABLE(
                id bigint,
                content text,

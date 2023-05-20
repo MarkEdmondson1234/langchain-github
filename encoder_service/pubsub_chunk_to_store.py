@@ -19,19 +19,18 @@ def from_pubsub_to_supabase(data: dict, vector_name:str):
     Args:
          data JSON
     """
-    logging.info(f"from_pubsub_to_supabase got data: {data}")
+
     logging.info(f"vectorstore: {vector_name}")
 
     #file_sha = data['message']['data']
 
     message_data = base64.b64decode(data['message']['data']).decode('utf-8')
-    attributes = data['message'].get('attributes', {})
     messageId = data['message'].get('messageId')
     publishTime = data['message'].get('publishTime')
 
     logging.info(f"This Function was triggered by messageId {messageId} published at {publishTime}")
-
     logging.info(f"from_pubsub_to_supabase message data: {message_data}")
+
     the_json = json.loads(message_data)
 
     if not isinstance(the_json, dict):
@@ -42,8 +41,6 @@ def from_pubsub_to_supabase(data: dict, vector_name:str):
         return "No page content"
     
     metadata = the_json.get("metadata", None)
-    if metadata is not None:
-        metadata["attributes"] = attributes
 
     doc = Document(page_content=page_content, metadata=metadata)
 
@@ -56,7 +53,10 @@ def from_pubsub_to_supabase(data: dict, vector_name:str):
     embeddings = OpenAIEmbeddings()
     supabase: Client = create_client(supabase_url, supabase_key)
 
-    vector_store = SupabaseVectorStore(supabase, embeddings, table_name=vector_name)
+    # ensure the supabase sql function and table has been created before using this
+    vector_store = SupabaseVectorStore(supabase, embeddings, 
+                                       table_name=vector_name,
+                                       query_name=f"match_documents_{vector_name}")
 
     logging.info("Adding single document to Supabase")
     vector_store.add_documents([doc])
