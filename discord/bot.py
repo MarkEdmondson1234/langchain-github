@@ -118,7 +118,7 @@ async def on_message(message):
                     print(f'response_data: {response_data}')
                     summaries = response_data.get('summaries', [])
                     for summary in summaries:
-                        await chunk_send(new_thread2, summary)
+                        await chunk_send(new_thread, summary)
                     await thinking_message2.edit(content="Uploaded file(s)")
                 else:
                     # Edit the thinking message to show an error
