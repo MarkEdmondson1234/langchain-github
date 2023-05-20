@@ -24,7 +24,7 @@ def pubsub_chunk_to_store(vector_name):
 
         meta = pb.from_pubsub_to_supabase(data, vector_name)
 
-        return jsonify(meta), 200
+        return {'status': 'Success'}, 200
 
 
 @app.route('/pubsub_to_store/<vector_name>', methods=['POST'])
@@ -38,7 +38,7 @@ def pubsub_to_store(vector_name):
 
         meta = publish_to_pubsub_embed.data_to_embed_pubsub(data, vector_name)
         file_uploaded = str(meta["source"])
-        return jsonify(file_uploaded), 200
+        return jsonify({'status': 'Success', 'source': file_uploaded}), 200
 
 
 @app.route('/', methods=['GET'])
