@@ -37,8 +37,8 @@ def pubsub_to_store(vector_name):
         data = request.get_json()
 
         meta = publish_to_pubsub_embed.data_to_embed_pubsub(data, vector_name)
-        
-        return jsonify(meta), 200
+        file_uploaded = str(meta["source"])
+        return jsonify(file_uploaded), 200
 
 
 @app.route('/', methods=['GET'])
