@@ -41,7 +41,7 @@ def from_pubsub_to_supabase(data: dict, vector_name:str):
     if page_content is None:
         return "No page content"
     
-    metadata = page_content.get("metadata", None)
+    metadata = the_json.get("metadata", None)
     if metadata is not None:
         metadata["attributes"] = attributes
 

@@ -67,6 +67,6 @@ class PubSubManager:
         if self.publisher and self.pubsub_topic:
             message_bytes = message.encode('utf-8')
             attr = {"namespace": str(self.memory_namespace)}
-            future = self.publisher.publish(self.pubsub_topic, message_bytes, attrs=json.dumps(attr))
+            future = self.publisher.publish(self.pubsub_topic, message_bytes, attrs=attr)
             future.add_done_callback(self._callback)
 
