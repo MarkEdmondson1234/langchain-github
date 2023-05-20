@@ -30,6 +30,8 @@ def generate_output(bot_output):
                 filtered_metadata["source"] = metadata["source"]
             if metadata.get("type", None) is not None:
                 filtered_metadata["type"] = metadata["type"]
+            if metadata.get("bucket_uri", None) is not None:
+                filtered_metadata["bucket_uri"] = metadata["bucket_uri"]
             source_doc = {
                 'page_content': doc.page_content,
                 'metadata': filtered_metadata
