@@ -139,18 +139,18 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
         bucket = storage_client.get_bucket(bucket_name)
         blob = bucket.blob(file_name)
 
-        with tempfile.NamedTemporaryFile() as tmp_file_path:
-            blob.download_to_filename(tmp_file_path.name)
+        file_name=pathlib.Path(file_name)
 
-            # Load the file into a Document
-            doc_path = pathlib.Path(tmp_file_path.name)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            tmp_file_path = os.path.join(temp_dir, file_name.name)
+            blob.download_to_filename(tmp_file_path)
 
-        metadata = attributes
-        metadata["source"] = file_name
-        metadata["type"] = "file_load_gcs"
+            metadata = attributes
+            metadata["source"] = file_name
+            metadata["type"] = "file_load_gcs"
 
-        docs = read_file_to_document(doc_path, metadata=metadata)
-        chunks = chunk_doc_to_docs(docs, doc_path.suffix)
+            docs = read_file_to_document(tmp_file_path, metadata=metadata)
+            chunks = chunk_doc_to_docs(docs, file_name.suffix)
 
     else:
         logging.info("No gs:// detected")
