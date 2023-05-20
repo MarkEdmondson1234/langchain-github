@@ -61,43 +61,46 @@ async def on_message(message):
 
         print(f"Chat history: {chat_history}")
 
-        # Forward the message content to your Flask app
-        flask_app_url = f'{FLASKURL}/discord/edmonbrain/message'
-        print(f'Calling {flask_app_url}')
-        payload = {
-            'content': clean_content,
-            'chat_history': chat_history
-        }
+        if len(clean_content) > 5:
+            # Forward the message content to your Flask app
+            flask_app_url = f'{FLASKURL}/discord/edmonbrain/message'
+            print(f'Calling {flask_app_url}')
+            payload = {
+                'content': clean_content,
+                'chat_history': chat_history
+            }
 
-        async with aiohttp.ClientSession() as session:
-            async with session.post(flask_app_url, json=payload) as response:
-                print(f'chat response.status: {response.status}')
-                if response.status == 200:
-                    response_data = await response.json()  # Get the response data as JSON
-                    print(f'response_data: {response_data}')
+            async with aiohttp.ClientSession() as session:
+                async with session.post(flask_app_url, json=payload) as response:
+                    print(f'chat response.status: {response.status}')
+                    if response.status == 200:
+                        response_data = await response.json()  # Get the response data as JSON
+                        print(f'response_data: {response_data}')
 
-                    source_docs = response_data.get('source_documents', [])
-                    reply_content = response_data.get('result')  # Get the 'result' field from the JSON
+                        source_docs = response_data.get('source_documents', [])
+                        reply_content = response_data.get('result')  # Get the 'result' field from the JSON
 
-                    seen = set()
-                    unique_source_docs = []
+                        seen = set()
+                        unique_source_docs = []
 
-                    for source in source_docs:
-                        metadata_str = json.dumps(source.get('metadata'), sort_keys=True)
-                        if metadata_str not in seen:
-                            unique_source_docs.append(source)
-                            seen.add(metadata_str)
+                        for source in source_docs:
+                            metadata_str = json.dumps(source.get('metadata'), sort_keys=True)
+                            if metadata_str not in seen:
+                                unique_source_docs.append(source)
+                                seen.add(metadata_str)
 
-                    for source in unique_source_docs:
-                        source_message = f"*source metadata*: {source.get('metadata')}"
-                        await chunk_send(new_thread, source_message)
+                        for source in unique_source_docs:
+                            source_message = f"*source metadata*: {source.get('metadata')}"
+                            await chunk_send(new_thread, source_message)
 
-                    # Edit the thinking message to show the reply
-                    await thinking_message.edit(content=reply_content)
-                    await new_thread.send(f"Reply to {bot_mention} within this thread to continue")
-                else:
-                    # Edit the thinking message to show an error
-                    await thinking_message.edit(content="Error in processing message.")
+                        # Edit the thinking message to show the reply
+                        await thinking_message.edit(content=reply_content)
+                        await new_thread.send(f"Reply to {bot_mention} within this thread to continue")
+                    else:
+                        # Edit the thinking message to show an error
+                        await thinking_message.edit(content="Error in processing message.")
+        else:
+            print(f"Got a little message not worth sending: {clean_content}")
 
     if message.attachments:
 
