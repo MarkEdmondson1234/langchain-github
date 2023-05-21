@@ -41,7 +41,7 @@ async def on_message(message):
         else:
             # If it's not a thread, create a new one
             new_thread = await message.channel.create_thread(
-                name=clean_content[:30], 
+                name=clean_content[:40], 
                 message=message)
 
 
