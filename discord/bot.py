@@ -92,20 +92,21 @@ async def on_message(message):
                                 seen.add(metadata_str)
 
                         for source in unique_source_docs:
-                            source_message = f"*source metadata*: {source.get('metadata')}"
+                            metadata_source = source.get('metadata')
+                            source_message = f"*source*: {metadata_source.get('source')}"
                             await chunk_send(new_thread, source_message)
 
                         # Edit the thinking message to show the reply
                         await thinking_message.edit(content=reply_content)
 
                         # Check if the message was sent in a thread or a private message
-                        if isinstance(message.channel, discord.Thread):
+                        if isinstance(new_thread, discord.Thread):
                             await new_thread.send(f"Reply to {bot_mention} within this thread to continue. Use !savethread to save thread to database")
-                        elif isinstance(message.channel, discord.DMChannel):
+                        elif isinstance(new_thread, discord.DMChannel):
                             # Its a DM
                             await new_thread.send(f"Use !savethread to save private chat history to database")
                         else:
-                            print(f"I couldn't work out the channel type: {message.channel}")
+                            print(f"I couldn't work out the channel type: {new_thread}")
                     else:
                         # Edit the thinking message to show an error
                         await thinking_message.edit(content="Error in processing message.")
