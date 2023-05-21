@@ -43,7 +43,7 @@ steps:
            --region ${_REGION} \
            --platform managed \
            --allow-unauthenticated \
-           --memory 1Gi \
+           --memory 2Gi \
            --cpu 1 \
            --max-instances 2 \
            --service-account ${_SERVICE_ACCOUNT}
