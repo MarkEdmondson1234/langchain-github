@@ -52,10 +52,12 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    print(message)
-
     if message.content:
         print(f'Got the message: {message.content}')
+
+        debug=False
+        if message.content.startswith("!debug"):
+            debug = True
 
         bot_mention = client.user.mention
         clean_content = message.content.replace(bot_mention, '')
@@ -67,7 +69,7 @@ async def on_message(message):
             if len(clean_content) < 5:
                 thread_name = "Baaa--zzz"
             else:
-                thread_name = clean_content[:40]
+                thread_name = f"Baa-zzz - {clean_content[:40]}"
             # If it's not a thread, create a new one
             new_thread = await message.channel.create_thread(
                 name=thread_name, 
@@ -89,9 +91,9 @@ async def on_message(message):
 
         history = []
         async for msg in new_thread.history(limit=50):
-            if msg.content.startswith(f"Reply to {bot_mention}"):
+            if msg.content.startswith(f"*Reply to {bot_mention}"):
                 continue
-            if msg.content.startswith("Use !savethread"):
+            if msg.content.startswith("*Use !savethread"):
                 continue
             history.append(msg)
 
@@ -118,32 +120,33 @@ async def on_message(message):
                         response_data = await response.json()  # Get the response data as JSON
                         #print(f'response_data: {response_data}')
 
-                        source_docs = response_data.get('source_documents', [])
-                        reply_content = response_data.get('result')  # Get the 'result' field from the JSON
+                        if debug:
+                            source_docs = response_data.get('source_documents', [])
+                            reply_content = response_data.get('result')  # Get the 'result' field from the JSON
 
-                        seen = set()
-                        unique_source_docs = []
+                            seen = set()
+                            unique_source_docs = []
 
-                        for source in source_docs:
-                            metadata_str = json.dumps(source.get('metadata'), sort_keys=True)
-                            if metadata_str not in seen:
-                                unique_source_docs.append(source)
-                                seen.add(metadata_str)
+                            for source in source_docs:
+                                metadata_str = json.dumps(source.get('metadata'), sort_keys=True)
+                                if metadata_str not in seen:
+                                    unique_source_docs.append(source)
+                                    seen.add(metadata_str)
 
-                        for source in unique_source_docs:
-                            metadata_source = source.get('metadata')
-                            source_message = f"*source*: {metadata_source.get('source')}"
-                            await chunk_send(new_thread, source_message)
+                            for source in unique_source_docs:
+                                metadata_source = source.get('metadata')
+                                source_message = f"**source**: {metadata_source.get('source')}"
+                                await chunk_send(new_thread, source_message)
 
                         # Edit the thinking message to show the reply
                         await thinking_message.edit(content=reply_content)
 
                         # Check if the message was sent in a thread or a private message
                         if isinstance(new_thread, discord.Thread):
-                            await new_thread.send(f"Reply to {bot_mention} within this thread to continue. Use !savethread to save thread to database")
+                            await new_thread.send(f"*Reply to {bot_mention} within this thread to continue. Use `!savethread` to save thread to database*")
                         elif isinstance(new_thread, discord.DMChannel):
                             # Its a DM
-                            await new_thread.send(f"Use !savethread to save private chat history to database")
+                            await new_thread.send(f"*Use !savethread to save private chat history to database*")
                         else:
                             print(f"I couldn't work out the channel type: {new_thread}")
                     else:
@@ -154,6 +157,12 @@ async def on_message(message):
             await thinking_message.edit(content="Your reply is too small to think too long about")
 
     if message.attachments:
+
+        max_file_size = 1 * 1024 * 1024  # 1 MB
+        for attachment in message.attachments:
+            if attachment.size > max_file_size:
+                await thinking_message.edit("Sorry, a file is too large to upload via Discord, please use another method.  Uploaded files need to be smaller than 1MB each.")
+                return
 
         # Send a thinking message
         thinking_message2 = await new_thread.send("Uploading file(s)..")
