@@ -23,7 +23,10 @@ def qna(question: str, vector_name: str, chat_history=None):
     embeddings = OpenAIEmbeddings()
     supabase: Client = create_client(supabase_url, supabase_key)
 
-    vectorstore = SupabaseVectorStore(supabase, embeddings, table_name=vector_name)
+    vectorstore = SupabaseVectorStore(supabase, 
+                                      embeddings, 
+                                      table_name=vector_name,
+                                      query_name=f'match_documents_{vector_name}')
 
     logging.info(f"vectorstore.table_name {vectorstore.table_name}")
 
