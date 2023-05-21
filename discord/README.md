@@ -63,7 +63,7 @@ A bot that can be used within Discord.
 1. the first document attempted to load will create a pubsub topic `app_to_pubsub_fnd` or make it yourself.
 1. Make a subscription called `pubsub_to_store_fnd` that pushes data to https://your-cloudrun-app.a.run.app/pubsub_to_store/fnd
 1. That will make a topic called `embed_chunk_fnd` or make it yourself.
-1. Create a subscription to `embed_chunk_fnd` called `pubsub_chunk_to_store_fnd` that pushes data to https://edmonbrain-app-xsww4stuxq-ey.a.run.app/pubsub_chunk_to_store/fnd
+1. Create a subscription to `embed_chunk_fnd` called `pubsub_chunk_to_store_fnd` that pushes data to https://your-cloudrun-app.a.run.app/pubsub_chunk_to_store/fnd
 
 /discord/<vector_name>/files --> pubsub_topic="app_to_pubsub_<vector_name>" --> pubsub_sub="pubsub_to_store_<vector_name>  -->
 /pubsub_to_store/<vector_name> --> pubsub_topic="embed_chunk_<vector_name>" --> pubsub_sub="pubsub_chunk_to_store_<vector_name> -->
