@@ -5,8 +5,13 @@ import json
 from dotenv import load_dotenv
 
 load_dotenv()
-TOKEN = os.getenv('DISCORD_TOKEN')  # Get your bot token from the .env file
-FLASKURL = os.getenv('FLASK_URL')
+TOKEN = os.getenv('DISCORD_TOKEN', None)  # Get your bot token from the .env file
+FLASKURL = os.getenv('FLASK_URL', None)
+VECTORNAME = os.getenv('VECTORNAME', None)
+
+if TOKEN is None or FLASKURL is None or VECTORNAME is None:
+    raise ValueError("Must set env vars DISCORD_TOKEN, FLASK_URL and VECTORNAME in .env")
+
 intents = discord.Intents.default()
 intents.messages = True
 intents.dm_messages = True  # Enable DM messages
@@ -65,7 +70,7 @@ async def on_message(message):
 
         if len(clean_content) > 10:
             # Forward the message content to your Flask app
-            flask_app_url = f'{FLASKURL}/discord/edmonbrain/message'
+            flask_app_url = f'{FLASKURL}/discord/{VECTORNAME}/message'
             print(f'Calling {flask_app_url}')
             payload = {
                 'content': clean_content,
