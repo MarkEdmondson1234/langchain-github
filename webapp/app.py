@@ -1,6 +1,6 @@
 import sys, os, requests
 import tempfile
-
+import random, time
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(parent_dir)
 
@@ -143,6 +143,29 @@ def pubsub_to_store(vector_name):
     """
     if request.method == 'POST':
         data = request.get_json()
+
+        meta = publish_to_pubsub_embed.data_to_embed_pubsub(data, vector_name)
+        file_uploaded = str(meta["source"])
+        return jsonify({'status': 'Success', 'source': file_uploaded}), 200
+
+@app.route('/pubsub_to_store_dead/<vector_name>', methods=['POST'])
+def pubsub_to_store_dead(vector_name):
+    """
+    If resources are exhausted, it may be that the messages need to be spaced out more.
+    After at least 5 attempts, the dead messages are sent to a pubsub dead topic/sub 
+    that sends to here to get a random delay to space out the processing of the chunks
+    
+    Splits up text or gs:// file into chunks and sends to pubsub topic 
+      that pushes back to /pubsub_chunk_to_store/<vector_name>
+    """
+    if request.method == 'POST':
+        data = request.get_json()
+        # Pause for a random number of seconds between 1 and 5 mins
+        pause_time = random.randint(1*60, 5*60)
+        logging.info(f'Adding random pause of {pause_time} seconds')
+        
+        time.sleep(pause_time)
+        logging.info(f'Finished random pause of {pause_time} seconds')
 
         meta = publish_to_pubsub_embed.data_to_embed_pubsub(data, vector_name)
         file_uploaded = str(meta["source"])
