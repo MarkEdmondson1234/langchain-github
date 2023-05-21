@@ -57,12 +57,23 @@ Need a seperate Discord bot hosting service with a bot that will call the Cloud 
 
 I deploy mine from this repo https://github.com/MarkEdmondson1234/discord-bot
 
-1. Upload bot.py, requirements.txt and .env to the Discord bot server
+1. Create a config file that will look up your Discord server name and determine which brain to use:
+
+```
+{
+	"Mark Edmondson": "edmonbrain",
+	"Another Discord Server": "blah.com"
+}
+```
+
+1. Upload bot.py, config.yaml, requirements.txt and .env to the Discord bot server
 1. Verify bot server is running
 
-I couldn't make it work permissions with to read every message in a channel, but it does work for direct messages to the bot, which is probably best anyway.
+Discord bot will need to be mentioned via @ElectricSheep to get data sent to the bot
 
 ![](img/discord-llm-bit.png)
+
+### 
 
 ### Routing
 

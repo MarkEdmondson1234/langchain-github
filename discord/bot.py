@@ -24,7 +24,8 @@ def select_vectorname(message):
             print(f'Guild: {server_name} - vector_name: {vector_name}')
             return config[server_name]
 
-    raise ValueError(f"Could not find a configured vector for server_name: {server_name}")
+        raise ValueError(f"Could not find a configured vector for server_name: {server_name}")
+    return None
 
 
 
@@ -74,6 +75,11 @@ async def on_message(message):
             print(e)
             return  # exit the event handler
 
+        if VECTORNAME == None:
+            # maybe only let it answer to my user DMs
+            print(f'DM from {message.author}')
+            return
+
         # Send a thinking message
         thinking_message = await new_thread.send("Thinking...")
 
@@ -90,7 +96,7 @@ async def on_message(message):
                             else "Human", "content": msg.content} \
                             for msg in reversed(history[1:])]
 
-        print(f"Chat history: {chat_history}")
+        #print(f"Chat history: {chat_history}")
 
         if len(clean_content) > 10:
             # Forward the message content to your Flask app
@@ -106,7 +112,7 @@ async def on_message(message):
                     print(f'chat response.status: {response.status}')
                     if response.status == 200:
                         response_data = await response.json()  # Get the response data as JSON
-                        print(f'response_data: {response_data}')
+                        #print(f'response_data: {response_data}')
 
                         source_docs = response_data.get('source_documents', [])
                         reply_content = response_data.get('result')  # Get the 'result' field from the JSON
