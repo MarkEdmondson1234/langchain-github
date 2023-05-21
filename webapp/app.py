@@ -78,7 +78,7 @@ def discord_message(vector_name):
     if user_input.startswith("!savethread"):
         # write chat history to a file
         with tempfile.TemporaryDirectory() as temp_dir:
-            chat_file_path = os.path.join(temp_dir, f"{hourmin}/chat_history.txt")
+            chat_file_path = os.path.join(temp_dir, f"{hourmin}_chat_history.txt")
             with open(chat_file_path, 'w') as file:
                 for chat in chat_history:
                     file.write(f"{chat['name']}: {chat['content']}\n")
