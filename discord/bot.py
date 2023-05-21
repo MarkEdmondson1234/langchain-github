@@ -7,10 +7,28 @@ from dotenv import load_dotenv
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN', None)  # Get your bot token from the .env file
 FLASKURL = os.getenv('FLASK_URL', None)
-VECTORNAME = os.getenv('VECTORNAME', None)
 
-if TOKEN is None or FLASKURL is None or VECTORNAME is None:
-    raise ValueError("Must set env vars DISCORD_TOKEN, FLASK_URL and VECTORNAME in .env")
+def load_config(filename):
+    with open(filename, 'r') as f:
+        config = json.load(f)
+    return config
+
+# Load the config file at the start of your program
+config = load_config('config.json')
+
+def select_vectorname(message):
+    if message.guild is not None:  
+        server_name = message.guild.name
+        print(f'Guild: {server_name}')
+        if server_name in config:
+            return config[server_name]
+
+    raise ValueError(f"Could not find a configured vector for server_name: {server_name}")
+
+
+
+if TOKEN is None or FLASKURL is None:
+    raise ValueError("Must set env vars DISCORD_TOKEN, FLASK_URL in .env")
 
 intents = discord.Intents.default()
 intents.messages = True
@@ -49,6 +67,11 @@ async def on_message(message):
                 name=clean_content[:40], 
                 message=message)
 
+        try:
+            VECTORNAME = select_vectorname(message)
+        except ValueError as e:
+            print(e)
+            return  # exit the event handler
 
         # Send a thinking message
         thinking_message = await new_thread.send("Thinking...")
