@@ -19,8 +19,9 @@ config = load_config('config.json')
 def select_vectorname(message):
     if message.guild is not None:  
         server_name = message.guild.name
-        print(f'Guild: {server_name}')
         if server_name in config:
+            vector_name = config[server_name]
+            print(f'Guild: {server_name} - vector_name: {vector_name}')
             return config[server_name]
 
     raise ValueError(f"Could not find a configured vector for server_name: {server_name}")
