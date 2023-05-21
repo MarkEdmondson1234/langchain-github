@@ -64,9 +64,13 @@ async def on_message(message):
         if isinstance(message.channel, (discord.Thread, discord.DMChannel)):
             new_thread = message.channel
         else:
+            if len(clean_content) < 5:
+                thread_name = "Baaa--zzz"
+            else:
+                thread_name = clean_content[:40]
             # If it's not a thread, create a new one
             new_thread = await message.channel.create_thread(
-                name=clean_content[:40], 
+                name=thread_name, 
                 message=message)
 
         try:
