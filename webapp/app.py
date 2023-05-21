@@ -63,7 +63,7 @@ def process_input():
 @app.route('/discord/<vector_name>/message', methods=['POST'])
 def discord_message(vector_name):
     data = request.get_json()
-    user_input = data['content']  # Extract user input from the payload
+    user_input = data['content'].strip()  # Extract user input from the payload
 
     logging.info(f"discord_message: {data}")
 
