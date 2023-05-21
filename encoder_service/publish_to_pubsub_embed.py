@@ -50,8 +50,8 @@ def add_file_to_gcs(filename: str, vector_name="qa_documents", bucket_name: str=
     year = now.strftime("%Y")
     month = now.strftime("%m")
     day = now.strftime("%d") 
-    time = now.strftime("%H%M%S")
-    bucket_filepath = f"{vector_name}/{year}/{month}/{day}/{time}_{os.path.basename(filename)}"
+    hour = now.strftime("%H")
+    bucket_filepath = f"{vector_name}/{year}/{month}/{day}/{hour}/{os.path.basename(filename)}"
 
     blob = bucket.blob(bucket_filepath)
     blob.upload_from_filename(filename)
@@ -123,8 +123,17 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
     publishTime = data['message'].get('publishTime')
 
     logging.info(f"data_to_embed_pubsub was triggered by messageId {messageId} published at {publishTime}")
-
     logging.info(f"data_to_embed_pubsub data: {message_data}")
+
+    # pubsub from a Google Cloud Storage push topic
+    if attributes.get("eventType", None) is not None and attributes.get("payloadFormat", None) is not None:
+        eventType = attributes.get("eventType")
+        payloadFormat = attributes.get("payloadFormat")
+        if eventType == "OBJECT_FINALIZE" and payloadFormat == "JSON_API_V1":
+            logging.info("Got valid event from Google Cloud Storage")
+            # https://cloud.google.com/storage/docs/json_api/v1/objects#resource-representations
+            message_data = 'gs://' + attributes.get("bucketId") + '/' + attributes.get("objectId")
+            logging.info(f"Constructed message_data: {message_data}")
 
     metadata = {}
 
@@ -153,10 +162,9 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
             blob.download_to_filename(tmp_file_path)
 
             metadata = {
-                "source": file_name,
+                "source": message_data,
                 "type": "file_load_gcs",
-                "bucket_name": bucket_name,
-                "bucket_uri": message_data
+                "bucket_name": bucket_name
             }
 
             docs = read_file_to_document(tmp_file_path, metadata=metadata)

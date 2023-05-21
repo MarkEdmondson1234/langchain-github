@@ -70,6 +70,19 @@ def discord_message(vector_name):
     chat_history = data.get('chat_history', None)
     paired_messages = bot_help.extract_chat_history(chat_history)
 
+    if user_input.startswith("!savethread"):
+        # write chat history to a file
+        with tempfile.TemporaryDirectory() as temp_dir:
+            chat_file_path = os.path.join(temp_dir, "chat_history.txt")
+            with open(chat_file_path, 'w') as file:
+                for chat in chat_history:
+                    file.write(f"{chat['name']}: {chat['content']}\n")
+            gs_file = bot_help.app_to_store(chat_file_path, vector_name)
+            result = {"result": f"Saved chat history to {gs_file}"}
+
+            return result
+
+
     bot_output = question_service.qna(user_input, vector_name, chat_history=paired_messages)
     
     logging.info(f"bot_output: {bot_output}")
@@ -83,6 +96,8 @@ def discord_message(vector_name):
 def discord_files(vector_name):
     data = request.get_json()
     attachments = data.get('attachments', [])
+    content = data.get('content', "").strip()
+    chat_history = data.get('chat_history', [])
 
     logging.info(f'discord_files got data: {data}')
     with tempfile.TemporaryDirectory() as temp_dir:
