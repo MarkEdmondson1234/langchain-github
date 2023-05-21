@@ -1,6 +1,8 @@
 import sys, os, requests
 import tempfile
 import random, time
+import datetime
+
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(parent_dir)
 
@@ -67,13 +69,16 @@ def discord_message(vector_name):
 
     logging.info(f"discord_message: {data}")
 
+    now = datetime.datetime.now()
+    hourmin = now.strftime("%H%M")
+
     chat_history = data.get('chat_history', None)
     paired_messages = bot_help.extract_chat_history(chat_history)
 
     if user_input.startswith("!savethread"):
         # write chat history to a file
         with tempfile.TemporaryDirectory() as temp_dir:
-            chat_file_path = os.path.join(temp_dir, "chat_history.txt")
+            chat_file_path = os.path.join(temp_dir, f"{hourmin}/chat_history.txt")
             with open(chat_file_path, 'w') as file:
                 for chat in chat_history:
                     file.write(f"{chat['name']}: {chat['content']}\n")
