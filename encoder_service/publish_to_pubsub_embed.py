@@ -77,11 +77,12 @@ def add_file_to_gcs(filename: str, vector_name="qa_documents", bucket_name: str=
 def read_url_to_document(url: str, metadata: dict = None):
     
     loader = UnstructuredURLLoader(urls=[url])
-    doc = loader.load()
+    docs = loader.load()
     if metadata is not None:
-        doc.metadata.update(metadata)
+        for doc in docs:
+            doc.metadata.update(metadata)
     
-    return doc
+    return docs
 
 
 def read_file_to_document(gs_file: pathlib.Path, split=False, metadata: dict = None):

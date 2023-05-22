@@ -5,7 +5,7 @@ WORKDIR /app
 # Install required packages for building hnswlib
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    build-essential poppler-utils tesseract-ocr-all \
+    build-essential poppler-utils tesseract-ocr-all libmagic \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
