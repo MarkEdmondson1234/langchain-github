@@ -214,8 +214,11 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
         logging.info("No gs:// detected")
         
         the_json = json.loads(message_data)
-        metadata = the_json.get("metadata", None)
+        metadata = the_json.get("metadata", {})
         the_content = the_json.get("page_content", None)
+
+        if metadata.get("source", None) is not None:
+            metadata["source"] = "No source embedded"
 
         if the_content is None:
             logging.info("No content found")
