@@ -14,6 +14,10 @@ The back end of PubSub/CloudRun can be triggered in various ways via a HTTP call
 * Discord bot (allowing use of Discord's caht history and file handling)
 * Google Cloud Storage bucket - files added can be configured to trigger a PubSub message foramt that `/pubsub_to_store/<vector_name>` supports.
 
+Discord is good because its a nice UX to use to load and discuss your files:
+
+![](img/talk-to-discord.png)
+
 TODO:
 
 * Slackbot
@@ -23,7 +27,7 @@ TODO:
 
 The embeds are routed to Supabase, but can be swapped out for another vectorstore by adjusting the Langchain functions.  You can see how to configure Supabase [via this README file.](../discord/README.md)
 
-!()[img/supabase_vectorstore.png]
+![](img/supabase_vectorstore.png)
 
 
 ## Deploy to Cloud Run
