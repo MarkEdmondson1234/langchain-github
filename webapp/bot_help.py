@@ -38,7 +38,7 @@ def generate_output(bot_output):
             source_documents.append(source_doc)
 
     return {
-        'result': bot_output['answer'],
+        'result': bot_output.get('answer', "No answer available"),
         'source_documents': source_documents
     }
 

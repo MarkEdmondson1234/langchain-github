@@ -38,13 +38,14 @@ def qna(question: str, vector_name: str, chat_history=None):
     qa = ConversationalRetrievalChain.from_llm(llm, 
                                                retriever=retriever, 
                                                return_source_documents=True,
-                                               verbose=True)
+                                               verbose=True,
+                                               max_tokens_limit=2000)
 
-    try:
-        result = qa.run(question, chat_history)
-    except errors.InvalidRequestError as error:
-        result = {"result": "The prompt given was too big", "error": str(error)}
-    except Exception as error:
-        result = {"result": "An error occurred", "error": str(error)}
+    result = qa.predict(question, chat_history)
+    # try:
+    # except errors.InvalidRequestError as error:
+    #     result = {"answer": "The prompt given was too big", "error": str(error)}
+    # except Exception as error:
+    #     result = {"answer": f"An error occurred - {str(error)}", "error": str(error)}
     
     return result
