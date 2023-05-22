@@ -127,7 +127,7 @@ def choose_splitter(extension: str, chunk_size: int=1024, chunk_overlap:int=0):
     
     return text_splitter.RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
 
-def remove_whitespace(page_content):
+def remove_whitespace(page_content: str):
     return page_content.replace("\n", " ").replace("\r", " ").replace("\t", " ").replace("  ", " ")
 
 

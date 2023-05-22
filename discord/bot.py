@@ -3,6 +3,7 @@ import discord
 import aiohttp
 import json
 from dotenv import load_dotenv
+import shlex
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN', None)  # Get your bot token from the .env file
@@ -82,9 +83,21 @@ async def on_message(message):
             return  # exit the event handler
 
         if VECTORNAME == None:
-            # maybe only let it answer to my user DMs
+            # debug mode for me
             print(f'DM from {message.author}')
-            return
+            if str(message.author) == "MarkeD#2972":
+                VECTORNAME="edmonbrain"
+                debug=True
+                words = shlex.split(str(message.content))
+                print(words)
+                if words[0] == "!vectorname":
+                    VECTORNAME = words[1]
+                    await chunk_send(message.channel, f"vectorname={VECTORNAME}")
+                    clean_content = words[2]
+                else:
+                    await chunk_send(message.channel, "Hello Master. Use !vectorname <vector_name> 'clean content' to debug")
+            else:
+                return
 
         # Send a thinking message
         thinking_message = await new_thread.send("Thinking...")
@@ -154,7 +167,7 @@ async def on_message(message):
                             await new_thread.send(f"*Reply to {bot_mention} within this thread to continue. Use `!savethread` to save thread to database, or `!saveurl` to save content at a URL*")
                         elif isinstance(new_thread, discord.DMChannel):
                             # Its a DM
-                            await new_thread.send(f"*Use `!savethread` to save private chat history to database, or `!saveurl` to save content at a URL**")
+                            await new_thread.send(f"*Use `!savethread` to save private chat history to database, or `!saveurl` to save content at a URL*")
                         else:
                             print(f"I couldn't work out the channel type: {new_thread}")
                     else:
