@@ -19,6 +19,12 @@ TODO:
 * Slackbot
 * GChat
 
+## Supabase
+
+The embeds are routed to Supabase, but can be swapped out for another vectorstore by adjusting the Langchain functions.  You can see how to configure Supabase [via this README file.](../discord/README.md)
+
+!()[img/supabase_vectorstore.png]
+
 
 ## Deploy to Cloud Run
 
