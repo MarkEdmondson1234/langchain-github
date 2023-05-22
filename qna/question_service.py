@@ -39,7 +39,8 @@ def qna(question: str, vector_name: str, chat_history=None):
                                                retriever=retriever, 
                                                return_source_documents=True,
                                                verbose=True,
-                                               output_key='answer')
+                                               output_key='answer',
+                                               max_tokens_limit=3500)
 
     result = qa({"question": question, "chat_history": chat_history})
     # try:

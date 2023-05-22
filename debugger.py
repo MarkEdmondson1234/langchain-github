@@ -47,7 +47,7 @@ print("Creating client")
 supabase: Client = create_client(supabase_url, supabase_key)
 
 print("Initiating vectorstore")
-vector_store = SupabaseVectorStore(supabase, embeddings, table_name="edmonbrain")
+vector_store = SupabaseVectorStore(supabase, embeddings, table_name="fnd")
 
 retriever = vector_store.as_retriever(search_kwargs=dict(k=4))
 
@@ -57,11 +57,12 @@ qa = ConversationalRetrievalChain.from_llm(llm,
                                             retriever=retriever, 
                                             return_source_documents=True,
                                             verbose=True,
-                                            output_key='answer')
+                                            output_key='answer',
+                                            max_tokens_limit=3500)
 
 #result = qa.run({"question": question, "chat_history": chat_history})
 
-result = qa.run({"question": "do you know anything about coor?", 
+result = qa({"question": "What four star mages are there?", 
              "chat_history": [
         ("What is the date Australia was founded.", "Australia was founded in 1901.")]})
 
