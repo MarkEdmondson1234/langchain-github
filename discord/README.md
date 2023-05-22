@@ -2,6 +2,10 @@
 
 A bot that can be used within Discord.
 
+Discord is good because its a nice UX to use to load and discuss your files:
+
+![](img/talk-to-discord.png)
+
 ## Setup
 
 1. Add the bot to the Discord server via this link:
