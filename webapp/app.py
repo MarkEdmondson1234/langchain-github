@@ -95,6 +95,7 @@ def discord_message(vector_name):
             result = {"result": f"URLs sent for processing: {urls}"}
         else:
             result = {"result": f"No URLs were found"}
+        return jsonify(result)
 
     bot_output = question_service.qna(user_input, vector_name, chat_history=paired_messages)
     
