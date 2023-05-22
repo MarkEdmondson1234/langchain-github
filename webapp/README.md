@@ -100,6 +100,8 @@ gcloud storage buckets notifications create gs://devoteam-mark-langchain-loader 
 
 Now every file added to the cloud storage bucket will trigger a pipeline of loading it as a document, splitting it up into chunks, embedding them and sending to the vector database.
 
+![](img/gcs-bucket-trigger.png)
+
 ## Slackbot
 
 Can only accept inputs and outputs

@@ -52,6 +52,6 @@ def extract_chat_history(chat_history=None):
         paired_messages = list(zip(human_messages, ai_messages))
     else:
         print("No chat history found")
-        paired_messages = None
+        paired_messages = []
 
     return paired_messages
