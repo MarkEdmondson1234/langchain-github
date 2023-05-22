@@ -1,12 +1,38 @@
 # UX for EdmonBrain
 
-This is an exploration on how to interact with the LLM tools in this repo
+This is an exploration on how to interact with the LLM tools in this repo.  It includes a Flask app that is deployed to Cloud Run, for 0 to 1000+ scale.  Each individual cloud Run instance needs to process a file, but can't do multiple files at once.  To work around the need for vertical scaling, a document is broken into chunks using the Langchain loaders for various file formats.  Each document is chunked and then sent to its own PubSub message topic.  That topic sends the content back to the app in another process, so it can scale up and down as required.  Once the app has embedded the document chunk via OpenAI, it sends the data to a Supabase vectorstore. 
+
+The LLM embedding, document loaders, vectorstore can be swapped out fairly easily by using the appropriate Langchain functios.
+
+For QnA over the doucments using the vectorstore there is also an endpoint explained in [that folder](../qna/README.md).
+
+## Triggers
+
+The back end of PubSub/CloudRun can be triggered in various ways via a HTTP call to `/pubsub_to_store/<vector_name>`, where <vector_name> is a namespace that can be used to import into several different vectordatabases via the same app. Currently the triggers are:
+
+* Flask web app run locally 
+* Discord bot (allowing use of Discord's caht history and file handling)
+* Google Cloud Storage bucket - files added can be configured to trigger a PubSub message foramt that `/pubsub_to_store/<vector_name>` supports.
+
+TODO:
+
+* Slackbot
+* GChat
+
 
 ## Deploy to Cloud Run
 
+Deploy the app to Cloud Run by using Cloud Build as shown below. 
+
 ### Add secrets to Secret Manager
 
-* OPENAI_API_KEY
+These secrets are needed to be available to Cloud Build so it can add them at build time to the deployed Cloud Run instance.
+
+* OPENAI_API_KEY - from openai
+* SUPABASE_KEY - for Supabase deployments
+* SUPABASE_URL - the Supabase URL you want to use
+
+
 
 ### IAM
 
@@ -26,7 +52,9 @@ gcloud builds submit --config cloudbuild.yaml . \
   --substitutions=_IMAGE_NAME=edmonbrain,_SERVICE_NAME=edmonbrain-app,_REGION=europe-west3,_GCS_BUCKET=bucket-to-store-vectorstore,_SERVICE_ACCOUNT=your-service-account@your-project.iam.gserviceaccount.com
 ```
 
-Or preferably set up a Cloud Build Trigger for each git commit
+Or preferably set up a Cloud Build Trigger for each git commit.
+* cloudbuild.yaml is a longer running build for making the Docker image needed for the Cloud Run
+* cloudbuild_cloudrun.yaml only copies across the files and deploys to Cloud Run without needing to install pip libaraires and system stuff too
 
 
 ## WebApp
@@ -73,9 +101,7 @@ Discord bot will need to be mentioned via @ElectricSheep to get data sent to the
 
 ![](img/discord-llm-bit.png)
 
-### 
-
-### Routing
+## PubSub Routing
 
 1. Create a dead letter topic/sub that will write failed messages to BigQuery.  This prevents the message trying forever and running up bills.  Assign this dead letter topic to all PubSub subscriptions made below. 
 
