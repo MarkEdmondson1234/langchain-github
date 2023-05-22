@@ -95,6 +95,8 @@ async def on_message(message):
                 continue
             if msg.content.startswith("*Use !savethread"):
                 continue
+            if msg.content.startswith("*Use !saveurl"):
+                continue
             history.append(msg)
 
         # Reverse the messages to maintain the order of conversation
@@ -120,33 +122,39 @@ async def on_message(message):
                         response_data = await response.json()  # Get the response data as JSON
                         #print(f'response_data: {response_data}')
 
-                        if debug:
-                            source_docs = response_data.get('source_documents', [])
-                            reply_content = response_data.get('result')  # Get the 'result' field from the JSON
+                        source_docs = response_data.get('source_documents', [])
+                        reply_content = response_data.get('result')  # Get the 'result' field from the JSON
 
-                            seen = set()
-                            unique_source_docs = []
+                        # dedupe source docs
+                        seen = set()
+                        unique_source_docs = []
 
-                            for source in source_docs:
-                                metadata_str = json.dumps(source.get('metadata'), sort_keys=True)
-                                if metadata_str not in seen:
-                                    unique_source_docs.append(source)
-                                    seen.add(metadata_str)
+                        for source in source_docs:
+                            metadata_str = json.dumps(source.get('metadata'), sort_keys=True)
+                            if metadata_str not in seen:
+                                unique_source_docs.append(source)
+                                seen.add(metadata_str)
 
-                            for source in unique_source_docs:
-                                metadata_source = source.get('metadata')
+                        for source in unique_source_docs:
+                            metadata_source = source.get('metadata')
+                            if debug:
                                 source_message = f"**source**: {metadata_source.get('source')}"
                                 await chunk_send(new_thread, source_message)
+                            source_url = metadata_source.get('url', None)
+                            if source_url is not None:
+                                url_message = f"**url**: {source_url}"
+                                await chunk_send(new_thread, url_message)
+
 
                         # Edit the thinking message to show the reply
                         await thinking_message.edit(content=reply_content)
 
                         # Check if the message was sent in a thread or a private message
                         if isinstance(new_thread, discord.Thread):
-                            await new_thread.send(f"*Reply to {bot_mention} within this thread to continue. Use `!savethread` to save thread to database*")
+                            await new_thread.send(f"*Reply to {bot_mention} within this thread to continue. Use `!savethread` to save thread to database, or `!saveurl` to save content at a URL*")
                         elif isinstance(new_thread, discord.DMChannel):
                             # Its a DM
-                            await new_thread.send(f"*Use !savethread to save private chat history to database*")
+                            await new_thread.send(f"*Use `!savethread` to save private chat history to database, or `!saveurl` to save content at a URL**")
                         else:
                             print(f"I couldn't work out the channel type: {new_thread}")
                     else:
