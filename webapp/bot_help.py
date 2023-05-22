@@ -21,7 +21,8 @@ def handle_files(uploaded_files, temp_dir, vector_name):
     return bot_output
 
 def generate_output(bot_output):
-    if bot_output['source_documents'] is not None:
+    source_documents = []
+    if bot_output.get('source_documents', None) is not None:
         source_documents = []
         for doc in bot_output['source_documents']:
             metadata = doc.metadata
