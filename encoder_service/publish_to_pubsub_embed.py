@@ -82,6 +82,8 @@ def read_url_to_document(url: str, metadata: dict = None):
         for doc in docs:
             doc.metadata.update(metadata)
     
+    logging.info(f"UnstructuredURLLoader docs: {docs}")
+    
     return docs
 
 
@@ -203,7 +205,7 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
             metadata["url"] = url
             metadata["type"] = "url_load"
             doc = read_url_to_document(url, metadata=metadata)
-            docs.append(doc)
+            docs.extend(doc)
 
         chunks = chunk_doc_to_docs(docs)
 
@@ -220,7 +222,7 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
         
         docs = [Document(page_content=the_content, metadata=metadata)]
 
-        publish_if_urls(the_content, metadata, vector_name)
+        publish_if_urls(the_content, vector_name)
 
         chunks = chunk_doc_to_docs(docs)
         
@@ -230,7 +232,7 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
 
     return metadata
 
-def publish_if_urls(the_content, metadata, vector_name):
+def publish_if_urls(the_content, vector_name):
     """
     Extracts URLs and puts them in a queue for processing on PubSub
     """
