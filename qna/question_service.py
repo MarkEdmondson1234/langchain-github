@@ -6,6 +6,7 @@ from langchain.llms import OpenAI
 
 #https://python.langchain.com/en/latest/modules/chains/index_examples/chat_vector_db.html
 from langchain.chains import ConversationalRetrievalChain
+import openai.error as errors
 
 from supabase import Client, create_client
 from dotenv import load_dotenv
@@ -39,6 +40,11 @@ def qna(question: str, vector_name: str, chat_history=None):
                                                return_source_documents=True,
                                                verbose=True)
 
-    result = qa({"question": question, "chat_history": chat_history})
+    try:
+        result = qa.run(question, chat_history)
+    except errors.InvalidRequestError as error:
+        result = {"result": "The prompt given was too big", "error": str(error)}
+    except Exception as error:
+        result = {"result": "An error occurred", "error": str(error)}
     
     return result
