@@ -68,3 +68,40 @@ A bot that can be used within Discord.
 /discord/<vector_name>/files --> pubsub_topic="app_to_pubsub_<vector_name>" --> pubsub_sub="pubsub_to_store_<vector_name>  -->
 /pubsub_to_store/<vector_name> --> pubsub_topic="embed_chunk_<vector_name>" --> pubsub_sub="pubsub_chunk_to_store_<vector_name> -->
 /pubsub_chunk_to_store/<vector_name> --> supabase db_table=<vector_name>
+
+## Supabase
+
+Improving the documents returned is a matter of improving the SQL query
+https://supabase.com/blog/openai-embeddings-postgres-vector
+
+For instance, you can add a threshold for the similarity score (0.5 in below example)
+
+```sql
+CREATE OR REPLACE FUNCTION match_documents_fnd(query_embedding vector(1536), match_count int)
+           RETURNS TABLE(
+               id bigint,
+               content text,
+               metadata jsonb,
+               -- we return matched vectors to enable maximal marginal relevance searches
+               embedding vector(1536),
+               similarity float)
+           LANGUAGE plpgsql
+           AS $$
+           # variable_conflict use_column
+       BEGIN
+           RETURN query
+           SELECT
+               id,
+               content,
+               metadata,
+               embedding,
+               1 -(fnd.embedding <=> query_embedding) AS similarity
+           FROM
+               fnd
+           where 1 - (fnd.embedding <=> query_embedding) > 0.5
+           ORDER BY
+               fnd.embedding <=> query_embedding
+           LIMIT match_count;
+       END;
+       $$;
+```

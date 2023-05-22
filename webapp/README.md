@@ -77,12 +77,28 @@ Discord bot will need to be mentioned via @ElectricSheep to get data sent to the
 
 ### Routing
 
-1. User adds file and it is sent to /discord/<vector_name>/files
-2. /discord/<vector_name>/files sends each file to encoder_service/publish_to_pubsub_embed.add_file_to_gcs and generates gs:// filename
-3. /discord/<vector_name>/files then sends filename to PubSub topic `app_to_pubsub_<vector_name>` via publish_text()
-4. PubSub subscription `pubsub_to_app_chunk_<edmonbrain>` pushes filename to `/pubsub_to_store/<vector_name>`
-5. `/pubsub_to_store/<vector_name>` chunks up data and sends to PubSub topic "embed_chunk"
-6. "embed_chunk" sends data to sub pubsub_to_store_edmonbrain and then to /pubsub_chunk_to_store/edmonbrain which sends each chunk to Supabase
+1. Create a dead letter topic/sub that will write failed messages to BigQuery.  This prevents the message trying forever and running up bills.  Assign this dead letter topic to all PubSub subscriptions made below. 
+
+1. the first document attempted to load will create a pubsub topic `app_to_pubsub_<vector_name>` or make it yourself.
+1. Make a subscription for above topic called `pubsub_to_store_<vector_name>` that pushes data to https://your-cloudrun-app.a.run.app/pubsub_to_store/<vector_name>
+1. That will make a topic called `embed_chunk_<vector_name>` or make it yourself.
+1. Create a subscription to topic `embed_chunk_<vector_name>` called `pubsub_chunk_to_store_<vector_name>` that pushes data to https://your-cloudrun-app.a.run.app/pubsub_chunk_to_store/<vector_name>
+
+/discord/<vector_name>/files --> pubsub_topic="app_to_pubsub_<vector_name>" --> pubsub_sub="pubsub_to_store_<vector_name>  -->
+/pubsub_to_store/<vector_name> --> pubsub_topic="embed_chunk_<vector_name>" --> pubsub_sub="pubsub_chunk_to_store_<vector_name> -->
+/pubsub_chunk_to_store/<vector_name> --> supabase db_table=<vector_name>
+
+## Cloud Storage files to embed vector database
+
+Make a PubSub topic fire for each file added to a cloud storage bucket and aim it at `app_to_pubsub_<vector_name>`
+
+e.g.
+
+```
+gcloud storage buckets notifications create gs://devoteam-mark-langchain-loader --topic=app_to_pubsub_<vector_name>
+```
+
+Now every file added to the cloud storage bucket will trigger a pipeline of loading it as a document, splitting it up into chunks, embedding them and sending to the vector database.
 
 ## Slackbot
 
