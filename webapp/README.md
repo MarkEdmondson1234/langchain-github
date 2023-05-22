@@ -16,7 +16,7 @@ The back end of PubSub/CloudRun can be triggered in various ways via a HTTP call
 
 Discord is good because its a nice UX to use to load and discuss your files:
 
-![](img/talk-to-discord.png)
+![](../img/talk-to-discord.png)
 
 TODO:
 
@@ -27,7 +27,7 @@ TODO:
 
 The embeds are routed to Supabase, but can be swapped out for another vectorstore by adjusting the Langchain functions.  You can see how to configure Supabase [via this README file.](../discord/README.md)
 
-![](img/supabase_vectorstore.png)
+![](../img/supabase_vectorstore.png)
 
 
 ## Deploy to Cloud Run
@@ -109,7 +109,7 @@ I deploy mine from this repo https://github.com/MarkEdmondson1234/discord-bot
 
 Discord bot will need to be mentioned via @ElectricSheep to get data sent to the bot
 
-![](img/discord-llm-bit.png)
+![](../img/discord-llm-bit.png)
 
 ## PubSub Routing
 
@@ -136,7 +136,7 @@ gcloud storage buckets notifications create gs://devoteam-mark-langchain-loader 
 
 Now every file added to the cloud storage bucket will trigger a pipeline of loading it as a document, splitting it up into chunks, embedding them and sending to the vector database.
 
-![](img/gcs-bucket-trigger.png)
+![](../img/gcs-bucket-trigger.png)
 
 ## Slackbot
 
