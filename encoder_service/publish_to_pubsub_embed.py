@@ -202,7 +202,7 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
 
         docs = []
         for url in urls:
-            metadata["url"] = url
+            metadata["source"] = url
             metadata["type"] = "url_load"
             doc = read_url_to_document(url, metadata=metadata)
             docs.extend(doc)
