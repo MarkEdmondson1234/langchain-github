@@ -41,7 +41,7 @@ def qna(question: str, vector_name: str, chat_history=None):
                                                verbose=True,
                                                max_tokens_limit=2000)
 
-    result = qa.predict(question, chat_history)
+    result = qa.run(question, chat_history)
     # try:
     # except errors.InvalidRequestError as error:
     #     result = {"answer": "The prompt given was too big", "error": str(error)}
