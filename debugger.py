@@ -53,9 +53,11 @@ retriever = vector_store.as_retriever(search_kwargs=dict(k=4))
 
 llm = OpenAI(temperature=0)
 
-qa = ConversationalRetrievalChain.from_llm(llm, retriever=retriever, return_source_documents=True)
+qa = ConversationalRetrievalChain.from_llm(llm, retriever=retriever, return_source_documents=True, verbose=True)
 
-result = qa({"question": "do you know anything about coor?", "chat_history": ""})
+result = qa({"question": "do you know anything about coor?", 
+             "chat_history": [
+        ("What is the date Australia was founded.", "Australia was founded in 1901.")]})
 
 print(result)
 

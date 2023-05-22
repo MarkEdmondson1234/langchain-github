@@ -39,9 +39,9 @@ def qna(question: str, vector_name: str, chat_history=None):
                                                retriever=retriever, 
                                                return_source_documents=True,
                                                verbose=True,
-                                               max_tokens_limit=2000)
+                                               output_key='answer')
 
-    result = qa.run(question, chat_history)
+    result = qa.run({"question": question, "chat_history": chat_history})
     # try:
     # except errors.InvalidRequestError as error:
     #     result = {"answer": "The prompt given was too big", "error": str(error)}

@@ -1,4 +1,4 @@
-langchain>=0.0.173
+langchain>=0.0.176
 openai
 chromadb
 tiktoken
