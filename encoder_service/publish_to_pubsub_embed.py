@@ -127,13 +127,16 @@ def choose_splitter(extension: str, chunk_size: int=1024, chunk_overlap:int=0):
     
     return text_splitter.RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
 
+def remove_whitespace(page_content):
+    return page_content.replace("\n", " ").replace("\r", " ").replace("\t", " ").replace("  ", " ")
+
 
 def chunk_doc_to_docs(documents: list, extension: str = ".md"):
     """Turns a Document object into a list of many Document chunks"""
     for document in documents:
         source_chunks = []
         splitter = choose_splitter(extension)
-        for chunk in splitter.split_text(document.page_content):
+        for chunk in splitter.split_text(remove_whitespace(document.page_content)):
             source_chunks.append(Document(page_content=chunk, metadata=document.metadata))
 
         return source_chunks  
