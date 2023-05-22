@@ -1,7 +1,9 @@
 # imports
-import os, shutil, json
+import os, shutil, json, re
 import pathlib
 from langchain.document_loaders.unstructured import UnstructuredFileLoader
+from langchain.document_loaders import UnstructuredURLLoader
+
 from langchain.docstore.document import Document
 from google.cloud import storage
 import base64
@@ -15,8 +17,19 @@ import logging
 from my_llm.pubsub_manager import PubSubManager
 import datetime
 
-
 load_dotenv()
+
+def contains_url(message_data):
+    url_pattern = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+')
+    if url_pattern.search(message_data):
+        return True
+    else:
+        return False
+
+def extract_urls(text):
+    url_pattern = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+')
+    urls = url_pattern.findall(text)
+    return urls
 
 # utility functions
 def convert_to_txt(file_path):
@@ -61,11 +74,22 @@ def add_file_to_gcs(filename: str, vector_name="qa_documents", bucket_name: str=
     return f"gs://{bucket_name}/{bucket_filepath}"
 
 
+def read_url_to_document(url: str, metadata: dict = None):
+    
+    loader = UnstructuredURLLoader(urls=[url])
+    doc = loader.load()
+    if metadata is not None:
+        doc.metadata.update(metadata)
+    
+    return doc
+
+
 def read_file_to_document(gs_file: pathlib.Path, split=False, metadata: dict = None):
     
     #file_sha1 = compute_sha1_from_file(gs_file.name)
     
     try:
+        #TODO: Use UnstructuredAPIFileLoader instead?
         loader = UnstructuredFileLoader(gs_file)
         if split:
             # only supported for some file types
@@ -136,9 +160,6 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
             logging.info(f"Constructed message_data: {message_data}")
 
     metadata = {}
-
-    logging.info(f"data_to_embed_pubsub metadata: {metadata}")
-
     chunks = []
 
     if message_data.startswith('"gs://'):
@@ -170,20 +191,56 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
             docs = read_file_to_document(tmp_file_path, metadata=metadata)
             chunks = chunk_doc_to_docs(docs, file_name.suffix)
 
+    elif message_data.startswith("http"):
+        logging.info(f"Got http message: {message_data}")
+
+        # just in case, extract the URL again
+        urls = extract_urls(message_data)
+
+        docs = []
+        for url in urls:
+            metadata["url"] = url
+            metadata["type"] = "url_load"
+            doc = read_url_to_document(url, metadata=metadata)
+            docs.append(doc)
+
+        chunks = chunk_doc_to_docs(docs)
+
     else:
         logging.info("No gs:// detected")
         
         the_json = json.loads(message_data)
         metadata = the_json.get("metadata", None)
-        doc = Document(page_content=the_json.get("page_content", None), metadata=metadata)
-        
-        chunks = chunk_doc_to_docs([doc])
+        the_content = the_json.get("page_content", None)
 
+        if the_content is None:
+            logging.info("No content found")
+            return {"metadata": "No content found"}
+        
+        docs = [Document(page_content=the_content, metadata=metadata)]
+
+        publish_if_urls(the_content, metadata, vector_name)
+
+        chunks = chunk_doc_to_docs(docs)
+        
     publish_chunks(chunks, vector_name=vector_name)
 
     logging.info(f"data_to_embed_pubsub published chunks with metadata: {metadata}")
 
     return metadata
+
+def publish_if_urls(the_content, metadata, vector_name):
+    """
+    Extracts URLs and puts them in a queue for processing on PubSub
+    """
+    if contains_url(the_content):
+        logging.info("Detected http://")
+
+        urls = extract_urls(the_content)
+            
+        for url in urls:
+            publish_text(url, vector_name)
+
 
 def publish_chunks(chunks: list[Document], vector_name: str):
     logging.info("Publishing chunks to embed_chunk")

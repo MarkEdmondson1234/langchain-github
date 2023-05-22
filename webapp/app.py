@@ -86,7 +86,15 @@ def discord_message(vector_name):
             result = {"result": f"Saved chat history to {gs_file}"}
 
             return result
-
+    
+    if user_input.startswith("!saveurl"):
+        if publish_to_pubsub_embed.contains_url(user_input):
+            urls = publish_to_pubsub_embed.extract_urls(user_input)
+            for url in urls:
+                publish_to_pubsub_embed.publish_text(url, vector_name)
+            result = {"result": f"URLs sent for processing: {urls}"}
+        else:
+            result = {"result": f"No URLs were found"}
 
     bot_output = question_service.qna(user_input, vector_name, chat_history=paired_messages)
     
@@ -148,29 +156,6 @@ def pubsub_to_store(vector_name):
     """
     if request.method == 'POST':
         data = request.get_json()
-
-        meta = publish_to_pubsub_embed.data_to_embed_pubsub(data, vector_name)
-        file_uploaded = str(meta["source"])
-        return jsonify({'status': 'Success', 'source': file_uploaded}), 200
-
-@app.route('/pubsub_to_store_dead/<vector_name>', methods=['POST'])
-def pubsub_to_store_dead(vector_name):
-    """
-    If resources are exhausted, it may be that the messages need to be spaced out more.
-    After at least 5 attempts, the dead messages are sent to a pubsub dead topic/sub 
-    that sends to here to get a random delay to space out the processing of the chunks
-    
-    Splits up text or gs:// file into chunks and sends to pubsub topic 
-      that pushes back to /pubsub_chunk_to_store/<vector_name>
-    """
-    if request.method == 'POST':
-        data = request.get_json()
-        # Pause for a random number of seconds between 1 and 5 mins
-        pause_time = random.randint(1*60, 5*60)
-        logging.info(f'Adding random pause of {pause_time} seconds')
-        
-        time.sleep(pause_time)
-        logging.info(f'Finished random pause of {pause_time} seconds')
 
         meta = publish_to_pubsub_embed.data_to_embed_pubsub(data, vector_name)
         file_uploaded = str(meta["source"])
