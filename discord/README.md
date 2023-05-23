@@ -4,7 +4,7 @@ A bot that can be used within Discord.
 
 Discord is good because its a nice UX to use to load and discuss your files:
 
-![](img/talk-to-discord.png)
+![](../img/talk-to-discord.png)
 
 ## Setup
 
