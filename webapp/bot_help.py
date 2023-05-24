@@ -13,12 +13,10 @@ def discord_webhook(message_data):
     data = {
         'content': message_data
     }
+    logging.info('Sending discord this data: {data}')
     response = requests.post(webhook_url, data=json.dumps(data),
                             headers={'Content-Type': 'application/json'})
-
-    if response.status_code != 204:
-        raise ValueError('Request to discord returned an error %s, the response is:\n%s'
-                        % (response.status_code, response.text))
+    logging.info('Sent data to discord: {response}')
     
     return response
 
@@ -27,8 +25,8 @@ def process_pubsub(data):
     messageId = data['message'].get('messageId')
     publishTime = data['message'].get('publishTime')
 
-    logging.debug(f"This Function was triggered by messageId {messageId} published at {publishTime}")
-    logging.debug(f"bot_help.process_pubsub message data: {message_data}")
+    logging.info(f"This Function was triggered by messageId {messageId} published at {publishTime}")
+    logging.info(f"bot_help.process_pubsub message data: {message_data}")
 
     return json.loads(message_data)
 
