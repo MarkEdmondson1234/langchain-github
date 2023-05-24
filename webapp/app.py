@@ -168,9 +168,14 @@ def pubsub_to_discord():
         data = request.get_json()
         message_data = bot_help.process_pubsub(data)
 
-        response = bot_help.discord_webhook(message_data)
+        if message_data.get('STATUS', None) is not None:
+            the_data = {'type': 'cloud_build', 'status': message_data.get('STATUS')}
+        else:
+            the_data = message_data
 
-        if response.status_code != 204:
+        response = bot_help.discord_webhook(the_data)
+
+        if response.status_code < 299:
             raise ValueError('Request to discord returned an error %s, the response is:\n%s'
                             % (response.status_code, response.text))
         

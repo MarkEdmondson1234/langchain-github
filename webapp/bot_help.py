@@ -13,10 +13,10 @@ def discord_webhook(message_data):
     data = {
         'content': message_data
     }
-    logging.info('Sending discord this data: {data}')
+    logging.info(f'Sending discord this data: {data}')
     response = requests.post(webhook_url, data=json.dumps(data),
                             headers={'Content-Type': 'application/json'})
-    logging.info('Sent data to discord: {response}')
+    logging.info(f'Sent data to discord: {response}')
     
     return response
 
