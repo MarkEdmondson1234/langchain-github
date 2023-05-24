@@ -176,7 +176,7 @@ def pubsub_to_discord():
         response = bot_help.discord_webhook(the_data)
 
         if response.status_code < 299:
-            raise ValueError('Request to discord returned an error %s, the response is:\n%s'
+            logging.info('Request to discord returned an error %s, the response is:\n%s'
                             % (response.status_code, response.text))
         
         return 'ok', 200
