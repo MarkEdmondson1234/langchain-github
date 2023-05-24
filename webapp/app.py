@@ -168,8 +168,8 @@ def pubsub_to_discord():
         data = request.get_json()
         message_data = bot_help.process_pubsub(data)
 
-        if message_data.get('STATUS', None) is not None:
-            the_data = {'type': 'cloud_build', 'status': message_data.get('STATUS')}
+        if message_data.get('status', None) is not None:
+            the_data = {'type': 'cloud_build', 'status': message_data.get('status')}
         else:
             the_data = message_data
 
