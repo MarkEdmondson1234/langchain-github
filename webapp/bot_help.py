@@ -29,8 +29,13 @@ def process_pubsub(data):
     logging.info(f"This Function was triggered by messageId {messageId} published at {publishTime}")
     logging.info(f"bot_help.process_pubsub message data: {message_data}")
 
+    try:
+        message_data = json.loads(message_data)
+    except:
+        logging.info("Its not a json")
+
     if message_data:
-        return json.loads(message_data)
+        return message_data
     
     logging.info(f"message_data was empty")
     return ''

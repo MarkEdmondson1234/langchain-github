@@ -65,6 +65,6 @@ def from_pubsub_to_supabase(data: dict, vector_name:str):
     logging.info(f"Added doc with metadata: {metadata}")
 
     pubsub_manager = PubSubManager(vector_name, pubsub_topic=f"pubsub_state_messages")
-    pubsub_manager.publish_message("Added doc with metadata: {metadata} to {vector_name}")
+    pubsub_manager.publish_message(f"pubsub_chunk - Added doc with metadata: {metadata} to {vector_name}")
 
     return metadata
