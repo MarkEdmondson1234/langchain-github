@@ -82,7 +82,7 @@ def discord_message(vector_name):
             with open(chat_file_path, 'w') as file:
                 for chat in chat_history:
                     file.write(f"{chat['name']}: {chat['content']}\n")
-            gs_file = bot_help.app_to_store(chat_file_path, vector_name)
+            gs_file = bot_help.app_to_store(chat_file_path, vector_name, via_bucket_pubsub=True)
             result = {"result": f"Saved chat history to {gs_file}"}
 
             return result
@@ -126,7 +126,7 @@ def discord_files(vector_name):
             
             open(safe_file_name, 'wb').write(response.content)
 
-            gs_file = bot_help.app_to_store(safe_file_name, vector_name)
+            gs_file = bot_help.app_to_store(safe_file_name, vector_name, via_bucket_pubsub=True)
             bot_output.append(f"{file_name} uploaded to {gs_file}")
 
     # Format the response payload

@@ -2,6 +2,7 @@
 import os, shutil, json, re
 import pathlib
 from langchain.document_loaders.unstructured import UnstructuredFileLoader
+from langchain.document_loaders.unstructured import UnstructuredAPIFileLoader
 from langchain.document_loaders import UnstructuredURLLoader
 
 from langchain.docstore.document import Document
@@ -93,7 +94,7 @@ def read_file_to_document(gs_file: pathlib.Path, split=False, metadata: dict = N
     
     try:
         #TODO: Use UnstructuredAPIFileLoader instead?
-        loader = UnstructuredFileLoader(gs_file)
+        loader = UnstructuredAPIFileLoader(gs_file, mode="elements", api_key="FAKE_API_KEY")
         if split:
             # only supported for some file types
             docs = loader.load_and_split()
@@ -103,7 +104,7 @@ def read_file_to_document(gs_file: pathlib.Path, split=False, metadata: dict = N
         if "file type is not supported in partition" in str(e):
             # Convert the file to .txt and try again
             txt_file = convert_to_txt(gs_file)
-            loader = UnstructuredFileLoader(txt_file)
+            loader = UnstructuredFileLoader(txt_file, mode="elements")
             if split:
                 docs = loader.load_and_split()
             else:
