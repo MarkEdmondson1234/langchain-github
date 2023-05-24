@@ -119,7 +119,7 @@ def read_file_to_document(gs_file: pathlib.Path, split=False, metadata: dict = N
 
     for doc in docs:
         #doc.metadata["file_sha1"] = file_sha1
-        logging.info(f"doc_content: {doc.path_content[:30]}")
+        logging.info(f"doc_content: {doc.page_content[:30]}")
         if metadata is not None:
             doc.metadata.update(metadata)
 
