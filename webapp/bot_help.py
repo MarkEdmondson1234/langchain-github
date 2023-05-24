@@ -29,7 +29,7 @@ def process_pubsub(data):
     publishTime = data['message'].get('publishTime')
 
     logging.info(f"This Function was triggered by messageId {messageId} published at {publishTime}")
-    logging.info(f"bot_help.process_pubsub message data: {message_data}")
+    #logging.info(f"bot_help.process_pubsub message data: {message_data}")
 
     try:
         message_data = json.loads(message_data)
