@@ -10,6 +10,7 @@ from supabase import Client, create_client
 from dotenv import load_dotenv
 from langchain.schema import Document
 import logging
+from my_llm.pubsub_manager import PubSubManager
 
 load_dotenv()
 
@@ -62,5 +63,8 @@ def from_pubsub_to_supabase(data: dict, vector_name:str):
     vector_store.add_documents([doc])
 
     logging.info(f"Added doc with metadata: {metadata}")
+
+    pubsub_manager = PubSubManager(vector_name, pubsub_topic=f"pubsub_state_messages")
+    pubsub_manager.publish_message("Added doc with metadata: {metadata} to {vector_name}")
 
     return metadata
