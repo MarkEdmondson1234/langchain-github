@@ -162,6 +162,21 @@ def pubsub_to_store(vector_name):
         file_uploaded = str(meta.get("source", "Could not find a source"))
         return jsonify({'status': 'Success', 'source': file_uploaded}), 200
 
+@app.route('/pubsub_to_discord', methods=['POST'])
+def pubsub_to_discord():
+    if request.method == 'POST':
+        data = request.get_json()
+        message_data = bot_help.process_pubsub(data)
+
+        response = bot_help.discord_webhook(message_data)
+
+        if response.status_code != 204:
+            raise ValueError('Request to discord returned an error %s, the response is:\n%s'
+                            % (response.status_code, response.text))
+        
+        return 'ok', 200
+    else:
+        return 'Method not supported', 405
 
 @app.route('/slack', methods=['POST'])
 def slack():

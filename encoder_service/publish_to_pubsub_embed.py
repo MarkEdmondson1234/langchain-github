@@ -94,13 +94,16 @@ def read_file_to_document(gs_file: pathlib.Path, split=False, metadata: dict = N
     
     try:
         #TODO: Use UnstructuredAPIFileLoader instead?
+        logging.info(f"Sending {gs_file} to UnstructuredAPIFileLoader")
         loader = UnstructuredAPIFileLoader(gs_file, mode="elements", api_key="FAKE_API_KEY")
+        logging.info(f"Got back loader for {gs_file} from UnstructuredAPIFileLoader")
         if split:
             # only supported for some file types
             docs = loader.load_and_split()
         else:
             docs = loader.load()
     except ValueError as e:
+        logging.info(f"Error for {gs_file} from UnstructuredAPIFileLoader - trying locally via .txt conversion")
         if "file type is not supported in partition" in str(e):
             # Convert the file to .txt and try again
             txt_file = convert_to_txt(gs_file)

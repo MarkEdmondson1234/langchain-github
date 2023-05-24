@@ -1,6 +1,36 @@
 import os
 from encoder_service import publish_to_pubsub_embed
 import logging
+import base64
+import json
+import requests
+
+def discord_webhook(message_data):
+    webhook_url = os.getenv('DISCORD_URL', None)  # replace with your webhook url
+    if webhook_url is None:
+        return None
+        
+    data = {
+        'content': message_data
+    }
+    response = requests.post(webhook_url, data=json.dumps(data),
+                            headers={'Content-Type': 'application/json'})
+
+    if response.status_code != 204:
+        raise ValueError('Request to discord returned an error %s, the response is:\n%s'
+                        % (response.status_code, response.text))
+    
+    return response
+
+def process_pubsub(data):
+    message_data = base64.b64decode(data['message']['data']).decode('utf-8')
+    messageId = data['message'].get('messageId')
+    publishTime = data['message'].get('publishTime')
+
+    logging.debug(f"This Function was triggered by messageId {messageId} published at {publishTime}")
+    logging.debug(f"bot_help.process_pubsub message data: {message_data}")
+
+    return json.loads(message_data)
 
 def app_to_store(safe_file_name, vector_name, via_bucket_pubsub=False):
     gs_file = publish_to_pubsub_embed.add_file_to_gcs(safe_file_name, vector_name)

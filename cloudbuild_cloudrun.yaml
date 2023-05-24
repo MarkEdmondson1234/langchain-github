@@ -4,6 +4,7 @@ substitutions:
   _REGION: your-region
   _GCS_BUCKET: your-gcs-bucket
   _SERVICE_ACCOUNT: your-service@your-project.iam.gserviceaccount.com
+  _DISCORD_URL: https://webhook-discord-url-to-send-to-discord
 
 steps:
   - name: 'gcr.io/cloud-builders/docker'
@@ -22,6 +23,7 @@ steps:
       ENV SUPABASE_KEY=$$SUPABASE_KEY
       ENV OPENAI_API_KEY=$$OPENAI_API_KEY
       ENV GCS_BUCKET=${_GCS_BUCKET}
+      ENV DISCORD_URL=${_DISCORD_URL}
 
       CMD ["python", "webapp/app.py"]
       EOF
