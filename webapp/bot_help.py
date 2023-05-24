@@ -21,6 +21,7 @@ def discord_webhook(message_data):
     return response
 
 def process_pubsub(data):
+    logging.info(f'process_pubsub: {data}')
     message_data = base64.b64decode(data['message']['data']).decode('utf-8')
     messageId = data['message'].get('messageId')
     publishTime = data['message'].get('publishTime')
@@ -28,7 +29,11 @@ def process_pubsub(data):
     logging.info(f"This Function was triggered by messageId {messageId} published at {publishTime}")
     logging.info(f"bot_help.process_pubsub message data: {message_data}")
 
-    return json.loads(message_data)
+    if message_data:
+        return json.loads(message_data)
+    
+    logging.info(f"message_data was empty")
+    return ''
 
 def app_to_store(safe_file_name, vector_name, via_bucket_pubsub=False):
     gs_file = publish_to_pubsub_embed.add_file_to_gcs(safe_file_name, vector_name)
