@@ -9,6 +9,8 @@ def discord_webhook(message_data):
     webhook_url = os.getenv('DISCORD_URL', None)  # replace with your webhook url
     if webhook_url is None:
         return None
+    
+    logging.info(f'webhook url: {webhook_url}')
         
     data = {
         'content': message_data
