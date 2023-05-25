@@ -126,7 +126,10 @@ def discord_files(vector_name):
             
             open(safe_file_name, 'wb').write(response.content)
 
-            gs_file = bot_help.app_to_store(safe_file_name, vector_name, via_bucket_pubsub=True)
+            gs_file = bot_help.app_to_store(safe_file_name, 
+                                            vector_name, 
+                                            via_bucket_pubsub=True, 
+                                            metadata={'discord_comment': content})
             bot_output.append(f"{file_name} uploaded to {gs_file}")
 
     # Format the response payload

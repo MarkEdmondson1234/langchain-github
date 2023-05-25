@@ -51,14 +51,13 @@ def process_pubsub(data):
     logging.info(f"message_data was empty")
     return ''
 
-def app_to_store(safe_file_name, vector_name, via_bucket_pubsub=False):
-    gs_file = publish_to_pubsub_embed.add_file_to_gcs(safe_file_name, vector_name)
+def app_to_store(safe_file_name, vector_name, via_bucket_pubsub=False, metadata:dict=None):
+    
+    gs_file = publish_to_pubsub_embed.add_file_to_gcs(safe_file_name, vector_name, metadata)
 
     # we send the gs:// to the pubsub ourselves
     if not via_bucket_pubsub:
         publish_to_pubsub_embed.publish_text(gs_file, vector_name)
-    else:
-        logging.info("Relying on pubsub topic set up on the bucket to send to Cloud Run")
 
     return gs_file
     
