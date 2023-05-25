@@ -181,7 +181,7 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
             logging.info(f"Constructed message_data: {message_data}")
     
     
-    metadata = {key: attributes[key] for key in attributes if key not in ['bucketId', 'objectId', 'eventType', 'payloadFormat']}
+    metadata = attributes
 
     logging.info(f"Found metadata in pubsub: {metadata}")
 
@@ -207,11 +207,12 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
             tmp_file_path = os.path.join(temp_dir, file_name.name)
             blob.download_to_filename(tmp_file_path)
 
-            metadata = {
+            the_metadata = {
                 "source": message_data,
                 "type": "file_load_gcs",
                 "bucket_name": bucket_name
             }
+            metadata.update(the_metadata)
 
             docs = read_file_to_document(tmp_file_path, metadata=metadata)
             chunks = chunk_doc_to_docs(docs, file_name.suffix)
