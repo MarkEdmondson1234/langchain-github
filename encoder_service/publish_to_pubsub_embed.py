@@ -50,7 +50,7 @@ def compute_sha1_from_content(content):
     readable_hash = hashlib.sha1(content).hexdigest()
     return readable_hash
 
-def add_file_to_gcs(filename: str, vector_name="qa_documents", bucket_name: str=None):
+def add_file_to_gcs(filename: str, vector_name="qa_documents", bucket_name: str=None, metadata:dict=None):
 
     storage_client = storage.Client()
 
@@ -68,6 +68,15 @@ def add_file_to_gcs(filename: str, vector_name="qa_documents", bucket_name: str=
     bucket_filepath = f"{vector_name}/{year}/{month}/{day}/{hour}/{os.path.basename(filename)}"
 
     blob = bucket.blob(bucket_filepath)
+
+    the_metadata = {
+        "vector_name": vector_name,
+    }
+    if metadata is not None:
+        the_metadata.update(metadata)
+
+    blob.metadata = the_metadata
+
     blob.upload_from_filename(filename)
 
     logging.info(f"File {filename} uploaded to gs://{bucket_name}/{bucket_filepath}")
@@ -170,8 +179,12 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
             # https://cloud.google.com/storage/docs/json_api/v1/objects#resource-representations
             message_data = 'gs://' + attributes.get("bucketId") + '/' + attributes.get("objectId")
             logging.info(f"Constructed message_data: {message_data}")
+    
+    
+    metadata = {key: attributes[key] for key in attributes if key not in ['bucketId', 'objectId', 'eventType', 'payloadFormat']}
 
-    metadata = {}
+    logging.info(f"Found metadata in pubsub: {metadata}")
+
     chunks = []
 
     if message_data.startswith('"gs://'):

@@ -31,6 +31,7 @@ def discord_webhook(message_data):
     return response
 
 def process_pubsub(data):
+
     logging.info(f'process_pubsub: {data}')
     message_data = base64.b64decode(data['message']['data']).decode('utf-8')
     messageId = data['message'].get('messageId')
@@ -42,7 +43,7 @@ def process_pubsub(data):
     try:
         message_data = json.loads(message_data)
     except:
-        logging.info("Its not a json")
+        logging.debug("Its not a json")
 
     if message_data:
         return message_data
@@ -99,8 +100,8 @@ def generate_output(bot_output):
 def embeds_to_json(message):
     return json.dumps(message["embeds"]) if message["embeds"] else None
 
-def create_message_tuple(message):
-    return message["content"], embeds_to_json(message)
+def create_message_element(message):
+    return (message["content"] + 'Embeds: ' + embeds_to_json(message) if embeds_to_json(message) else message["content"])
 
 def is_human(message):
     return message["name"] == "Human"
@@ -112,8 +113,8 @@ def extract_chat_history(chat_history=None):
     
     if chat_history:
         # Separate the messages into human and AI messages
-        human_messages = [create_message_tuple(message) for message in chat_history if is_human(message)]
-        ai_messages = [create_message_tuple(message) for message in chat_history if is_ai(message)]
+        human_messages = [create_message_element(message) for message in chat_history if is_human(message)]
+        ai_messages = [create_message_element(message) for message in chat_history if is_ai(message)]
         # Pair up the human and AI messages into tuples
         paired_messages = list(zip(human_messages, ai_messages))
     else:
