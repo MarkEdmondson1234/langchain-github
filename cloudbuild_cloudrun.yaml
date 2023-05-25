@@ -57,7 +57,7 @@ steps:
     args:
       - "-c"
       - |
-        $(gcloud run services describe ${_SERVICE_NAME} --region ${_REGION} --format 'value(status.url)') \
+        echo $(gcloud run services describe ${_SERVICE_NAME} --region ${_REGION} --format 'value(status.url)') \
           > service_url.txt
 
   # Update the service with SERVICE_URL environment variable
