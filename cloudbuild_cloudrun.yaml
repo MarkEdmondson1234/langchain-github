@@ -57,8 +57,8 @@ steps:
     args:
       - "-c"
       - |
-        export SERVICE_URL=$(gcloud run services describe ${_SERVICE_NAME} --region ${_REGION} --format 'value(status.url)')
-        echo $SERVICE_URL > service_url.txt
+        $(gcloud run services describe ${_SERVICE_NAME} --region ${_REGION} --format 'value(status.url)') \
+          > service_url.txt
 
   # Update the service with SERVICE_URL environment variable
   - name: "gcr.io/cloud-builders/gcloud"
