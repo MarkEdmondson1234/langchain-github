@@ -58,6 +58,9 @@ def add_file_to_gcs(filename: str, vector_name="qa_documents", bucket_name: str=
     if bucket_name is None:
         raise ValueError("No bucket found to upload to: GCS_BUCKET returned None")
     
+    if bucket_name.startswith("gs://"):
+        bucket_name = bucket_name.removeprefix("gs://")
+    
     logging.info(f"Bucket_name: {bucket_name}")
     bucket = storage_client.get_bucket(bucket_name)
     now = datetime.datetime.now()
