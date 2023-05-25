@@ -68,7 +68,7 @@ steps:
       - "-c"
       - |
         gcloud run services update ${_SERVICE_NAME} --region ${_REGION} \
-          --set-env-vars=SERVICE_URL=$$(cat service_url.txt)
+          --set-env-vars=SERVICE_URL=$(cat service_url.txt)
 
 availableSecrets:
   secretManager:
