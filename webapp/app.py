@@ -176,7 +176,7 @@ def pubsub_to_discord():
             if message_data.get('status', None) is not None:
                 cloud_build_status = message_data.get('status')
                 the_data = {'type': 'cloud_build', 'status': cloud_build_status}
-                if cloud_build_status != 'SUCCESS':
+                if cloud_build_status not in ['SUCCESS','FAILED']:
                     return cloud_build_status, 200
 
         response = bot_help.discord_webhook(the_data)
