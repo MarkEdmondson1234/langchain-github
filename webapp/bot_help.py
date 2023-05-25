@@ -15,6 +15,10 @@ def discord_webhook(message_data):
     # If the message_data is not a dict, wrap it in a dict.
     if not isinstance(message_data, dict):
         message_data = {'content': message_data}
+    else:
+        # if it is a dict, turn it into a string
+        message_data = {'content': json.dumps(message_data)}
+        #TODO parse out message_data into other discord webhook objects like embed
     
     data = message_data
 

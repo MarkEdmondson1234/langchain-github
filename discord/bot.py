@@ -44,6 +44,46 @@ async def chunk_send(channel, message):
     for chunk in chunks:
         await channel.send(chunk)
 
+async def make_chat_history(new_thread, bot_mention, client_user):
+    history = []
+    async for msg in new_thread.history(limit=30):
+        if msg.content.startswith(f"*Reply to {bot_mention}"):
+            continue
+        if msg.content.startswith("*Use !savethread"):
+            continue
+        if msg.content.startswith("**source**:"):
+            continue
+        if msg.content.startswith("**url**:"):
+            continue
+        history.append(msg)
+
+    # Reverse the messages to maintain the order of conversation
+    chat_history = []
+    for msg in reversed(history[1:]):
+        author = "AI" if msg.author == client_user else "Human"
+        content = msg.content
+        embeds = [embed.to_dict() for embed in msg.embeds]
+        chat_history.append({"name": author, "content": content, "embeds": embeds})
+
+
+    return chat_history
+
+async def make_new_thread(message, clean_content):
+    # Check if the message was sent in a thread or a private message
+    if isinstance(message.channel, (discord.Thread, discord.DMChannel)):
+        new_thread = message.channel
+    else:
+        if len(clean_content) < 5:
+            thread_name = "Baaa--zzz"
+        else:
+            thread_name = f"Baa-zzz - {clean_content[:40]}"
+        # If it's not a thread, create a new one
+        new_thread = await message.channel.create_thread(
+            name=thread_name, 
+            message=message)
+
+    return new_thread
+
 @client.event
 async def on_ready():
     print(f'{client.user} has connected to Discord!')
@@ -53,6 +93,19 @@ async def on_message(message):
     if message.author == client.user:
         return
 
+    # If the bot isn't mentioned and it's not a DM, return
+    if not isinstance(message.channel, discord.DMChannel)  \
+       and client.user not in message.mentions:
+        return
+
+    bot_mention = client.user.mention
+
+    clean_content = message.content.replace(bot_mention, '')
+
+    new_thread = await make_new_thread(message, clean_content)
+
+    chat_history = await make_chat_history(new_thread, bot_mention, client.user)
+
     if message.content:
         print(f'Got the message: {message.content}')
 
@@ -60,21 +113,7 @@ async def on_message(message):
         if message.content.startswith("!debug"):
             debug = True
 
-        bot_mention = client.user.mention
         clean_content = message.content.replace(bot_mention, '')
-
-        # Check if the message was sent in a thread or a private message
-        if isinstance(message.channel, (discord.Thread, discord.DMChannel)):
-            new_thread = message.channel
-        else:
-            if len(clean_content) < 5:
-                thread_name = "Baaa--zzz"
-            else:
-                thread_name = f"Baa-zzz - {clean_content[:40]}"
-            # If it's not a thread, create a new one
-            new_thread = await message.channel.create_thread(
-                name=thread_name, 
-                message=message)
 
         try:
             VECTORNAME = select_vectorname(message)
@@ -101,23 +140,6 @@ async def on_message(message):
 
         # Send a thinking message
         thinking_message = await new_thread.send("Thinking...")
-
-        history = []
-        async for msg in new_thread.history(limit=50):
-            if msg.content.startswith(f"*Reply to {bot_mention}"):
-                continue
-            if msg.content.startswith("*Use !savethread"):
-                continue
-            if msg.content.startswith("*Use !saveurl"):
-                continue
-            history.append(msg)
-
-        # Reverse the messages to maintain the order of conversation
-        chat_history = [{"name": "AI" if msg.author == client.user \
-                            else "Human", "content": msg.content} \
-                            for msg in reversed(history[1:])]
-
-        #print(f"Chat history: {chat_history}")
 
         if len(clean_content) > 10:
             # Forward the message content to your Flask app
@@ -150,9 +172,9 @@ async def on_message(message):
 
                         for source in unique_source_docs:
                             metadata_source = source.get('metadata')
-                            if debug:
-                                source_message = f"**source**: {metadata_source.get('source')}"
-                                await chunk_send(new_thread, source_message)
+                            #if debug:
+                            source_message = f"**source**: {metadata_source.get('source')}"
+                            await chunk_send(new_thread, source_message)
                             source_url = metadata_source.get('url', None)
                             if source_url is not None:
                                 url_message = f"**url**: {source_url}"
@@ -175,14 +197,14 @@ async def on_message(message):
                         await thinking_message.edit(content="Error in processing message.")
         else:
             print(f"Got a little message not worth sending: {clean_content}")
-            await thinking_message.edit(content="Your reply is too small to think too long about")
+            await thinking_message.edit(content=f"Your reply is too small to think too long about: {clean_content}")
 
     if message.attachments:
 
-        max_file_size = 1 * 1024 * 1024  # 1 MB
+        max_file_size = 10 * 1024 * 1024  # 10 MB
         for attachment in message.attachments:
             if attachment.size > max_file_size:
-                await thinking_message.edit("Sorry, a file is too large to upload via Discord, please use another method.  Uploaded files need to be smaller than 1MB each.")
+                await thinking_message.edit("Sorry, a file is too large to upload via Discord, please use another method such as the bucket.  Uploaded files need to be smaller than 10MB each.")
                 return
 
         # Send a thinking message
