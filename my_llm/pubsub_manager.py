@@ -47,6 +47,47 @@ class PubSubManager:
             if self.verbose:
                 print(f"Created Pub/Sub topic: {self.pubsub_topic}")
 
+    def create_subscription(self, subscription_name:str, push_endpoint: str):
+            """
+            Create a new subscription to the PubSub topic
+            """
+
+            if push_endpoint.startswith("https://"):
+                logging.info(f"Using full URL for push endpoint")
+            else:
+                service_url = os.getenv('SERVICE_URL', None)
+                if service_url is None:
+                    logging.info("No SERVICE_URL env specified and not a http endpoint")
+                    return
+                else:
+                    logging.info(f"Found service URL: {service_url}")
+                    if push_endpoint.startswith("/"):
+                        push_endpoint = service_url + push_endpoint
+                    else:
+                        logging.info("push_endpoint must start with / e.g. /pubsub_to_sink")
+                        return
+            
+            # Define full subscription name
+            subscription_name = f"projects/{self.project_id}/subscriptions/{subscription_name}"
+            
+            # Create a subscriber client
+            subscriber = pubsub_v1.SubscriberClient()
+            
+            # Create a push configuration
+            push_config = pubsub_v1.types.PushConfig()
+            push_config.push_endpoint = push_endpoint
+
+            # Try to create the subscription
+            try:
+                subscriber.create_subscription(name=subscription_name, topic=self.pubsub_topic, push_config=push_config)
+                logging.info(f"Created push subscription: {subscription_name}")
+                if self.verbose:
+                    print(f"Created push subscription: {subscription_name}")
+            except Exception as e:
+                logging.error(f"Failed to create push subscription: {e}")
+                if self.verbose:
+                    print(f"Failed to create push subscription: {e}")
+
     @staticmethod
     def _callback(future):
         try:

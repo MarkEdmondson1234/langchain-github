@@ -50,6 +50,27 @@ steps:
            --max-instances 2 \
            --service-account ${_SERVICE_ACCOUNT}
 
+  # Get service URL
+  - name: "gcr.io/cloud-builders/gcloud"
+    id: get service url
+    entrypoint: bash
+    args:
+      - "-c"
+      - |
+        export SERVICE_URL=$(gcloud run services describe ${_SERVICE_NAME} --region ${_REGION} --format 'value(status.url)')
+        echo $SERVICE_URL > service_url.txt
+
+  # Update the service with SERVICE_URL environment variable
+  - name: "gcr.io/cloud-builders/gcloud"
+    id: update service
+    entrypoint: bash
+    args:
+      - "-c"
+      - |
+        export SERVICE_URL=$(cat service_url.txt)
+        gcloud run services update ${_SERVICE_NAME} --region ${_REGION} \
+          --set-env-vars=SERVICE_URL=$SERVICE_URL
+
 availableSecrets:
   secretManager:
   - versionName: projects/$PROJECT_ID/secrets/OPENAI_API_KEY/versions/latest

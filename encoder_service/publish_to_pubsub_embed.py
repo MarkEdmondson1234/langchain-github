@@ -261,6 +261,8 @@ def publish_if_urls(the_content, vector_name):
 def publish_chunks(chunks: list[Document], vector_name: str):
     logging.info("Publishing chunks to embed_chunk")
     pubsub_manager = PubSubManager(vector_name, pubsub_topic=f"embed_chunk_{vector_name}")
+    pubsub_manager.create_subscription(f"pubsub_chunk_to_store_{vector_name}",
+                                       push_endpoint=f"/pubsub_chunk_to_store/{vector_name}")
     for chunk in chunks:
         # Convert chunk to string, as Pub/Sub messages must be strings or bytes
         chunk_str = chunk.json()
@@ -269,5 +271,7 @@ def publish_chunks(chunks: list[Document], vector_name: str):
 def publish_text(text:str, vector_name: str):
     logging.info(f"Publishing text to app_to_pubsub_{vector_name}")
     pubsub_manager = PubSubManager(vector_name, pubsub_topic=f"app_to_pubsub_{vector_name}")
+    pubsub_manager.create_subscription(f"pubsub_to_store_{vector_name}",
+                                       push_endpoint=f"/pubsub_to_store/{vector_name}")
     
     pubsub_manager.publish_message(text)
