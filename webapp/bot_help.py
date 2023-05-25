@@ -53,7 +53,7 @@ def process_pubsub(data):
 
 def app_to_store(safe_file_name, vector_name, via_bucket_pubsub=False, metadata:dict=None):
     
-    gs_file = publish_to_pubsub_embed.add_file_to_gcs(safe_file_name, vector_name, metadata)
+    gs_file = publish_to_pubsub_embed.add_file_to_gcs(safe_file_name, vector_name, metadata=metadata)
 
     # we send the gs:// to the pubsub ourselves
     if not via_bucket_pubsub:
