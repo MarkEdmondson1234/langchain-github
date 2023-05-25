@@ -19,6 +19,7 @@ def discord_webhook(message_data):
         # if it is a dict, turn it into a string
         message_data = {'content': json.dumps(message_data)}
         #TODO parse out message_data into other discord webhook objects like embed
+        # https://birdie0.github.io/discord-webhooks-guide/discord_webhook.html
     
     data = message_data
 
@@ -98,9 +99,11 @@ def generate_output(bot_output):
 def extract_chat_history(chat_history=None):
     
     if chat_history:
-        # Separate the messages into human and AI messages
-        human_messages = [message["content"] for message in chat_history if message["name"] == "Human"]
-        ai_messages = [message["content"] for message in chat_history if message["name"] == "AI"]
+        # Separate the messages into human and AI messages, including discord embeds data as a json string
+        human_messages = [(message["content"], 
+                           json.dumps(message["embeds"])) for message in chat_history if message["name"] == "Human"]
+        ai_messages = [(message["content"], 
+                        json.dumps(message["embeds"])) for message in chat_history if message["name"] == "AI"]
         # Pair up the human and AI messages into tuples
         paired_messages = list(zip(human_messages, ai_messages))
     else:
