@@ -9,7 +9,7 @@ substitutions:
 steps:
   - name: 'gcr.io/cloud-builders/docker'
     entrypoint: 'bash'
-    secretEnv: ["OPENAI_API_KEY", "SUPABASE_URL", "SUPABASE_KEY"]
+    secretEnv: ["OPENAI_API_KEY", "SUPABASE_URL", "SUPABASE_KEY", "DB_CONNECTION_STRING"]
     args:
     - '-c'
     - |
@@ -24,6 +24,7 @@ steps:
       ENV OPENAI_API_KEY=$$OPENAI_API_KEY
       ENV GCS_BUCKET=${_GCS_BUCKET}
       ENV DISCORD_URL=${_DISCORD_URL}
+      ENV DB_CONNECTION_STRING=$$DB_CONNECTION_STRING
 
       CMD ["python", "webapp/app.py"]
       EOF
@@ -78,3 +79,5 @@ availableSecrets:
     env: SUPABASE_URL
   - versionName: projects/$PROJECT_ID/secrets/SUPABASE_KEY/versions/latest
     env: SUPABASE_KEY
+  - versionName: projects/$PROJECT_ID/secrets/DB_CONNECTION_STRING/versions/latest
+    env: DB_CONNECTION_STRING

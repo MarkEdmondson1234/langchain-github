@@ -41,6 +41,7 @@ These secrets are needed to be available to Cloud Build so it can add them at bu
 * OPENAI_API_KEY - from openai
 * SUPABASE_KEY - for Supabase deployments
 * SUPABASE_URL - the Supabase URL you want to use
+* DB_CONNECTION_STRING - the Supabase postgres connection string if you want it to set up the database for you
 
 
 
