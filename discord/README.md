@@ -64,10 +64,7 @@ Discord is good because its a nice UX to use to load and discuss your files:
 
 1. Create a dead letter topic/sub that will write failed messages to BigQuery.  This prevents the message trying forever and running up bills.  Assign this dead letter topic to all PubSub instances below. 
 
-1. the first document attempted to load will create a pubsub topic `app_to_pubsub_fnd` or make it yourself.
-1. Make a subscription called `pubsub_to_store_fnd` that pushes data to https://your-cloudrun-app.a.run.app/pubsub_to_store/fnd
-1. That will make a topic called `embed_chunk_fnd` or make it yourself.
-1. Create a subscription to `embed_chunk_fnd` called `pubsub_chunk_to_store_fnd` that pushes data to https://your-cloudrun-app.a.run.app/pubsub_chunk_to_store/fnd
+The app will create all the PubSub topics and subscriptions necessary upon the first call to the app with a new vectorname - they are mapped out as below.  They are one to many, so it will allow parallel processing of document chunks that speeds it up significantly.
 
 /discord/<vector_name>/files --> pubsub_topic="app_to_pubsub_<vector_name>" --> pubsub_sub="pubsub_to_store_<vector_name>  -->
 /pubsub_to_store/<vector_name> --> pubsub_topic="embed_chunk_<vector_name>" --> pubsub_sub="pubsub_chunk_to_store_<vector_name> -->
