@@ -96,14 +96,24 @@ def generate_output(bot_output):
         'source_documents': source_documents
     }
 
+def embeds_to_json(message):
+    return json.dumps(message["embeds"]) if message["embeds"] else None
+
+def create_message_tuple(message):
+    return message["content"], embeds_to_json(message)
+
+def is_human(message):
+    return message["name"] == "Human"
+
+def is_ai(message):
+    return message["name"] == "AI"
+
 def extract_chat_history(chat_history=None):
     
     if chat_history:
-        # Separate the messages into human and AI messages, including discord embeds data as a json string
-        human_messages = [(message["content"], 
-                           json.dumps(message["embeds"])) for message in chat_history if message["name"] == "Human"]
-        ai_messages = [(message["content"], 
-                        json.dumps(message["embeds"])) for message in chat_history if message["name"] == "AI"]
+        # Separate the messages into human and AI messages
+        human_messages = [create_message_tuple(message) for message in chat_history if is_human(message)]
+        ai_messages = [create_message_tuple(message) for message in chat_history if is_ai(message)]
         # Pair up the human and AI messages into tuples
         paired_messages = list(zip(human_messages, ai_messages))
     else:
