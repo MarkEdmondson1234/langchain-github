@@ -11,12 +11,15 @@ def discord_webhook(message_data):
         return None
     
     logging.info(f'webhook url: {webhook_url}')
-        
-    data = {
-        'content': message_data
-    }
+
+    # If the message_data is not a dict, wrap it in a dict.
+    if not isinstance(message_data, dict):
+        message_data = {'content': message_data}
+    
+    data = message_data
+
     logging.info(f'Sending discord this data: {data}')
-    response = requests.post(webhook_url, json=json.dumps(data),
+    response = requests.post(webhook_url, json=data,
                             headers={'Content-Type': 'application/json'})
     logging.info(f'Sent data to discord: {response.json()}')
     
