@@ -91,7 +91,6 @@ class PubSubManager:
                     else:
                         logging.info("push_endpoint must start with / e.g. /pubsub_to_sink")
                         return
-            
 
             # Create a subscriber client
             subscriber = pubsub_v1.SubscriberClient()

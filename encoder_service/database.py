@@ -24,7 +24,7 @@ def setup_supabase(vector_name:str, verbose:bool=False):
     
     return True
 
-def delete_row_from_source(vector_name:str, source: str):
+def delete_row_from_source(source: str, vector_name:str):
     # adapt the user input and decode from bytes to string to protect against sql injection
     source = adapt(source).getquoted().decode()
     params = {'vector_name': vector_name, 'source_delete': source}
