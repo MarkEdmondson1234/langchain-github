@@ -1,5 +1,6 @@
 from google.cloud import pubsub_v1
 from google.api_core.exceptions import NotFound
+from google.api_core.exceptions import AlreadyExists
 from google.auth import default
 
 import json
@@ -53,7 +54,7 @@ class PubSubManager:
         # Create a subscriber client
         subscriber = pubsub_v1.SubscriberClient()
 
-        logging.info(f"Creating subscription: {full_subscription_name}")
+        logging.info(f"Checking subscription exists: {full_subscription_name}")
         
         # Check if the subscription already exists
         try:
@@ -62,6 +63,8 @@ class PubSubManager:
             return True
         except NotFound:
             return False
+        except AlreadyExists:
+            return True
         except Exception as e:
             logging.error(f"Failed to get subscription: {e}")
             if self.verbose:
@@ -99,9 +102,6 @@ class PubSubManager:
 
             # Check if the subscription already exists
             exists = self.subscription_exists(subscription_name)
-
-            # Define full subscription name
-            
 
             if not exists:
                 full_subscription_name = f"projects/{self.project_id}/subscriptions/{subscription_name}"
