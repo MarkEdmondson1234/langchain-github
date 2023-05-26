@@ -66,6 +66,7 @@ class PubSubManager:
             logging.error(f"Failed to get subscription: {e}")
             if self.verbose:
                 print(f"Failed to get subscription: {e}")
+            return False
 
 
     def create_subscription(self, subscription_name:str, push_endpoint: str):

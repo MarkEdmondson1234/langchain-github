@@ -311,8 +311,14 @@ def publish_chunks(chunks: list[Document], vector_name: str):
 def publish_text(text:str, vector_name: str):
     logging.info(f"Publishing text to app_to_pubsub_{vector_name}")
     pubsub_manager = PubSubManager(vector_name, pubsub_topic=f"app_to_pubsub_{vector_name}")
-    pubsub_manager.create_subscription(f"pubsub_to_store_{vector_name}",
-                                       push_endpoint=f"/pubsub_to_store/{vector_name}")
+    sub_name = f"pubsub_to_store_{vector_name}"
+
+    sub_exists = pubsub_manager.subscription_exists(sub_name)
+    
+    if not sub_exists:
+        pubsub_manager.create_subscription(sub_name,
+                                           push_endpoint=f"/pubsub_chunk_to_store/{vector_name}")
+        setup_database(vector_name)
     
     pubsub_manager.publish_message(text)
 
