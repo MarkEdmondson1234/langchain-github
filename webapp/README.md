@@ -138,6 +138,8 @@ Now every file added to the cloud storage bucket will trigger a pipeline of load
 
 ![](../img/gcs-bucket-trigger.png)
 
+By default it will use the vector_name you have specified, but that will be overwritten if there is any directory structure to the bucket with the vectorname being the name of the first folder within the bucket e.g. marksbrain/text1.txt will create a "marksbrain" vector database.   Files writted to the bucket with a vectorname specified will follow this strucutre too. 
+
 ## Slackbot
 
 Can only accept inputs and outputs
