@@ -16,9 +16,7 @@ def setup_supabase(vector_name:str, verbose:bool=False):
     params = {'vector_name': vector_name}
 
     execute_sql_from_file("sql/sb/setup.sql", params)
-    
     execute_sql_from_file("sql/sb/create_table.sql", params)
-    
     execute_sql_from_file("sql/sb/create_function.sql", params)
     
     if verbose: print("Ran all setup SQL statements")

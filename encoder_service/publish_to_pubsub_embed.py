@@ -278,10 +278,15 @@ def publish_if_urls(the_content, vector_name):
 
 def publish_chunks(chunks: list[Document], vector_name: str):
     logging.info("Publishing chunks to embed_chunk")
+    
     pubsub_manager = PubSubManager(vector_name, pubsub_topic=f"embed_chunk_{vector_name}")
+    
+    sub_name = f"pubsub_chunk_to_store_{vector_name}"
+
     sub_exists = pubsub_manager.subscription_exists(sub_name)
+    
     if not sub_exists:
-        pubsub_manager.create_subscription(f"pubsub_chunk_to_store_{vector_name}",
+        pubsub_manager.create_subscription(sub_name,
                                            push_endpoint=f"/pubsub_chunk_to_store/{vector_name}")
         setup_database(vector_name)
         
