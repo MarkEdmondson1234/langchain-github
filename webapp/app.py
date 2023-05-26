@@ -96,6 +96,12 @@ def discord_message(vector_name):
         else:
             result = {"result": f"No URLs were found"}
         return jsonify(result)
+    
+    if user_input.startswith("!deletesource"):
+        source = user_input.replace("!deletesource", "")
+        publish_to_pubsub_embed.delete_source(source, vector_name=vector_name)
+        result = {"result": f"Deleting source: {source}"}
+        return jsonify(result)
 
     bot_output = question_service.qna(user_input, vector_name, chat_history=paired_messages)
     

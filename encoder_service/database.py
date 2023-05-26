@@ -1,5 +1,6 @@
 import psycopg2
 from psycopg2.errors import DuplicateObject
+from psycopg2.extensions import adapt
 import logging
 import os
 
@@ -18,10 +19,18 @@ def setup_supabase(vector_name:str, verbose:bool=False):
     execute_sql_from_file("sql/sb/setup.sql", params)
     execute_sql_from_file("sql/sb/create_table.sql", params)
     execute_sql_from_file("sql/sb/create_function.sql", params)
+    execute_sql_from_file("sql/sb/create_delete_function.sql", params)
     
     if verbose: print("Ran all setup SQL statements")
     
     return True
+
+def delete_row_from_source(vector_name:str, source: str):
+    # adapt the user input and decode from bytes to string to protect against sql injection
+    source = adapt(source).getquoted().decode()
+    params = {'vector_name': vector_name, 'source_delete': source}
+    
+    execute_sql_from_file("sql/sb/delete_source_row.sql", params)
 
 
 def execute_sql_from_file(filename, params, return_rows=False):

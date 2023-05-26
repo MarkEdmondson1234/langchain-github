@@ -18,6 +18,7 @@ import logging
 from my_llm.pubsub_manager import PubSubManager
 import datetime
 from .database import setup_database
+from .database import delete_row_from_source
 
 load_dotenv()
 
@@ -302,3 +303,8 @@ def publish_text(text:str, vector_name: str):
                                        push_endpoint=f"/pubsub_to_store/{vector_name}")
     
     pubsub_manager.publish_message(text)
+
+def delete_source(source:str, vector_name:str):
+    logging.info(f"Deleting source: {source} from {vector_name}")
+    delete_row_from_source(source, vector_name)
+    logging.info(f"Deleted source: {source} from {vector_name}")
