@@ -1,38 +1,42 @@
 import psycopg2
+from psycopg2.errors import DuplicateObject
 import logging
 import os
 
-def setup_supabase(vector_name):
+def setup_database(vector_name:str, verbose:bool=False):
+    setup_supabase(vector_name, verbose)
 
+def setup_supabase(vector_name:str, verbose:bool=False):
+
+    hello = f"Setting up database: {vector_name}"
+    logging.info(hello)
+    if verbose:
+        print(hello)
+    
     params = {'vector_name': vector_name}
 
-    try:
-        execute_sql_from_file("sql/sb/setup.py", params)
-    except Exception as e:
-        logging.info("setup ok")
+    execute_sql_from_file("sql/sb/setup.sql", params)
     
-    try:
-        execute_sql_from_file("sql/sb/create_table.sql", params)
-    except Exception as e:
-        logging.info("table create ok")
+    execute_sql_from_file("sql/sb/create_table.sql", params)
     
-    try:
-        execute_sql_from_file("sql/sb/create_function.sql", params)
-    except Exception as e:
-        logging.info("create function ok")
+    execute_sql_from_file("sql/sb/create_function.sql", params)
+    
+    if verbose: print("Ran all setup SQL statements")
     
     return True
 
 
-def execute_sql_from_file(filename, params):
-    return execute_supabase_from_file(filename, params)
+def execute_sql_from_file(filename, params, return_rows=False):
+    return execute_supabase_from_file(filename, params, return_rows)
 
-def execute_supabase_from_file(filepath, params):
+def execute_supabase_from_file(filepath, params, return_rows=False):
 
      # Get the directory of this Python script
     dir_path = os.path.dirname(os.path.realpath(__file__))
     # Build the full filepath by joining the directory with the filename
     filepath = os.path.join(dir_path, filepath)
+
+    rows = []
 
     # read the SQL file
     with open(filepath, 'r') as file:
@@ -48,13 +52,22 @@ def execute_supabase_from_file(filepath, params):
         connection = psycopg2.connect(connection_string)
         cursor = connection.cursor()
 
-        # execute the SQL
+        # execute the SQL - raise the error if already found
         cursor.execute(sql)
 
         # commit the transaction to save changes to the database
         connection.commit()
 
+        if return_rows:
+            rows = cursor.fetchall()
+
         logging.info(f"Successfully executed SQL script from {filepath}")
+    
+    except (psycopg2.errors.DuplicateObject, 
+            psycopg2.errors.DuplicateTable, 
+            psycopg2.errors.DuplicateFunction) as e:
+        logging.info(str(e))
+        print(str(e))
 
     except (Exception, psycopg2.Error) as error:
         logging.error("Error while connecting to PostgreSQL", exc_info=True)
@@ -64,3 +77,23 @@ def execute_supabase_from_file(filepath, params):
             cursor.close()
             connection.close()
             logging.info("PostgreSQL connection is closed")
+    
+    if rows:
+        return rows
+    
+    return True
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Setup a supabase database",
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("vectorname", help="The namespace for Supabase vectorstore")
+
+    args = parser.parse_args()
+    config = vars(args)
+
+    vector_name = config.get('vectorname', None)
+    if vector_name is None:
+        raise ValueError("Must provide a vectorname")
+    
+    setup_supabase(vector_name, verbose=True)

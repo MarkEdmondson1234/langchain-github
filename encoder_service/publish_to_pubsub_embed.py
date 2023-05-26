@@ -17,6 +17,7 @@ from langchain.schema import Document
 import logging
 from my_llm.pubsub_manager import PubSubManager
 import datetime
+from .database import setup_database
 
 load_dotenv()
 
@@ -278,8 +279,12 @@ def publish_if_urls(the_content, vector_name):
 def publish_chunks(chunks: list[Document], vector_name: str):
     logging.info("Publishing chunks to embed_chunk")
     pubsub_manager = PubSubManager(vector_name, pubsub_topic=f"embed_chunk_{vector_name}")
-    pubsub_manager.create_subscription(f"pubsub_chunk_to_store_{vector_name}",
-                                       push_endpoint=f"/pubsub_chunk_to_store/{vector_name}")
+    sub_exists = pubsub_manager.subscription_exists(sub_name)
+    if not sub_exists:
+        pubsub_manager.create_subscription(f"pubsub_chunk_to_store_{vector_name}",
+                                           push_endpoint=f"/pubsub_chunk_to_store/{vector_name}")
+        setup_database(vector_name)
+        
     for chunk in chunks:
         # Convert chunk to string, as Pub/Sub messages must be strings or bytes
         chunk_str = chunk.json()

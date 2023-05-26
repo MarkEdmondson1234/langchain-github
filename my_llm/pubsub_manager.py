@@ -46,6 +46,25 @@ class PubSubManager:
             logging.info(f"Created Pub/Sub topic: {self.pubsub_topic}")
             if self.verbose:
                 print(f"Created Pub/Sub topic: {self.pubsub_topic}")
+    
+    def subscription_exists(self, subscription_name:str):
+
+        full_subscription_name = f"projects/{self.project_id}/subscriptions/{subscription_name}"
+        # Create a subscriber client
+        subscriber = pubsub_v1.SubscriberClient()
+        
+        # Check if the subscription already exists
+        try:
+            subscriber.get_subscription(full_subscription_name)
+            logging.info(f"Subscription {full_subscription_name} already exists.")
+            return True
+        except NotFound:
+            return False
+        except Exception as e:
+            logging.error(f"Failed to get subscription: {e}")
+            if self.verbose:
+                print(f"Failed to get subscription: {e}")
+
 
     def create_subscription(self, subscription_name:str, push_endpoint: str):
             """
@@ -67,9 +86,7 @@ class PubSubManager:
                         logging.info("push_endpoint must start with / e.g. /pubsub_to_sink")
                         return
             
-            # Define full subscription name
-            subscription_name = f"projects/{self.project_id}/subscriptions/{subscription_name}"
-            
+
             # Create a subscriber client
             subscriber = pubsub_v1.SubscriberClient()
             
@@ -77,16 +94,24 @@ class PubSubManager:
             push_config = pubsub_v1.types.PushConfig()
             push_config.push_endpoint = push_endpoint
 
-            # Try to create the subscription
-            try:
-                subscriber.create_subscription(name=subscription_name, topic=self.pubsub_topic, push_config=push_config)
-                logging.info(f"Created push subscription: {subscription_name}")
-                if self.verbose:
-                    print(f"Created push subscription: {subscription_name}")
-            except Exception as e:
-                logging.error(f"Failed to create push subscription: {e}")
-                if self.verbose:
-                    print(f"Failed to create push subscription: {e}")
+            # Check if the subscription already exists
+            exists = self.subscription_exists(subscription_name)
+
+            # Define full subscription name
+            full_subscription_name = f"projects/{self.project_id}/subscriptions/{subscription_name}"
+
+            if not exists:
+                try:
+                    subscriber.create_subscription(name=full_subscription_name, topic=self.pubsub_topic, push_config=push_config)
+                    logging.info(f"Created push subscription: {full_subscription_name}")
+                    if self.verbose:
+                        print(f"Created push subscription: {full_subscription_name}")
+                except Exception as e:
+                    logging.error(f"Failed to create push subscription: {e}")
+                    if self.verbose:
+                        print(f"Failed to create push subscription: {e}")
+            
+            return full_subscription_name
 
     @staticmethod
     def _callback(future):
