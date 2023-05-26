@@ -207,7 +207,6 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
             attributes["attrs"] = f"namespace:{vector_name}"
             logging.info(f"Constructed message_data: {message_data}")
     
-    
     metadata = attributes
 
     logging.info(f"Found metadata in pubsub: {metadata}")

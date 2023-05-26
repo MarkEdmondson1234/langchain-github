@@ -187,13 +187,10 @@ def pubsub_to_discord():
 
         response = bot_help.discord_webhook(the_data)
 
-        if response.status_code != "204":
-            logging.info('Request to discord returned an error %s, the response is:\n%s'
-                            % (response.status_code, response.text))
+        if response.status_code != 204:
+            logging.info(f'Request to discord returned {response.status_code}, the response is:\n{response.text}')
         
         return 'ok', 200
-    else:
-        return 'Method not supported', 405
 
 @app.route('/slack', methods=['POST'])
 def slack():
