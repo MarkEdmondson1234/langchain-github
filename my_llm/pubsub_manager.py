@@ -52,6 +52,8 @@ class PubSubManager:
         full_subscription_name = f"projects/{self.project_id}/subscriptions/{subscription_name}"
         # Create a subscriber client
         subscriber = pubsub_v1.SubscriberClient()
+
+        logging.info(f"Creating subscription: {full_subscription_name}")
         
         # Check if the subscription already exists
         try:
@@ -98,9 +100,11 @@ class PubSubManager:
             exists = self.subscription_exists(subscription_name)
 
             # Define full subscription name
-            full_subscription_name = f"projects/{self.project_id}/subscriptions/{subscription_name}"
+            
 
             if not exists:
+                full_subscription_name = f"projects/{self.project_id}/subscriptions/{subscription_name}"
+                logging.info(f"Creating subscription {full_subscription_name}")
                 try:
                     subscriber.create_subscription(name=full_subscription_name, topic=self.pubsub_topic, push_config=push_config)
                     logging.info(f"Created push subscription: {full_subscription_name}")

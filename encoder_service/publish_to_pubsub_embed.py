@@ -52,7 +52,7 @@ def compute_sha1_from_content(content):
     readable_hash = hashlib.sha1(content).hexdigest()
     return readable_hash
 
-def add_file_to_gcs(filename: str, vector_name="qa_documents", bucket_name: str=None, metadata:dict=None):
+def add_file_to_gcs(filename: str, vector_name:str, bucket_name: str=None, metadata:dict=None):
 
     storage_client = storage.Client()
 
@@ -82,9 +82,21 @@ def add_file_to_gcs(filename: str, vector_name="qa_documents", bucket_name: str=
 
     blob.metadata = the_metadata
 
+    #TODO: create cloud storage pubsub subscription?
+
     blob.upload_from_filename(filename)
 
     logging.info(f"File {filename} uploaded to gs://{bucket_name}/{bucket_filepath}")
+
+    # create pubsub topic and subscription if necessary to receive notifications from cloud storage 
+    pubsub_manager = PubSubManager(vector_name, pubsub_topic=f"app_to_pubsub_{vector_name}")
+    sub_name = f"pubsub_to_store_{vector_name}"
+    sub_exists = pubsub_manager.subscription_exists(sub_name)
+    if not sub_exists:
+        pubsub_manager.create_subscription(sub_name,
+                                           push_endpoint=f"/pubsub_to_store/{vector_name}")
+        setup_database(vector_name)
+        
 
     return f"gs://{bucket_name}/{bucket_filepath}"
 

@@ -114,12 +114,11 @@ Discord bot will need to be mentioned via @ElectricSheep to get data sent to the
 
 ## PubSub Routing
 
-1. Create a dead letter topic/sub that will write failed messages to BigQuery.  This prevents the message trying forever and running up bills.  Assign this dead letter topic to all PubSub subscriptions made below. 
+The PubSub topics and subscriptions should all be created automatically upon first message sent. 
 
-1. the first document attempted to load will create a pubsub topic `app_to_pubsub_<vector_name>` or make it yourself.
-1. Make a subscription for above topic called `pubsub_to_store_<vector_name>` that pushes data to https://your-cloudrun-app.a.run.app/pubsub_to_store/<vector_name>
-1. That will make a topic called `embed_chunk_<vector_name>` or make it yourself.
-1. Create a subscription to topic `embed_chunk_<vector_name>` called `pubsub_chunk_to_store_<vector_name>` that pushes data to https://your-cloudrun-app.a.run.app/pubsub_chunk_to_store/<vector_name>
+1. the first document attempted to load will create a pubsub topic `app_to_pubsub_<vector_name>` with a subscription `pubsub_to_store_<vector_name>` that pushes data to https://your-cloudrun-app.a.run.app/pubsub_to_store/<vector_name>
+1. pubsub_to_store will chunk u the document and send the pieces to another pubsub topic for parellel processing
+1. Parallel processing will be done via a created topic called `embed_chunk_<vector_name>` and a subscription called `pubsub_chunk_to_store_<vector_name>` that pushes data to https://your-cloudrun-app.a.run.app/pubsub_chunk_to_store/<vector_name>
 
 /discord/<vector_name>/files --> pubsub_topic="app_to_pubsub_<vector_name>" --> pubsub_sub="pubsub_to_store_<vector_name>  -->
 /pubsub_to_store/<vector_name> --> pubsub_topic="embed_chunk_<vector_name>" --> pubsub_sub="pubsub_chunk_to_store_<vector_name> -->
@@ -127,7 +126,7 @@ Discord bot will need to be mentioned via @ElectricSheep to get data sent to the
 
 ## Cloud Storage files to embed vector database
 
-Make a PubSub topic fire for each file added to a cloud storage bucket and aim it at `app_to_pubsub_<vector_name>`
+Make a PubSub topic fire for each file added by adding it to your own cloud storage bucket and aim it at `app_to_pubsub_<vector_name>`.  Easiest is one bucket per vector store. 
 
 e.g.
 
