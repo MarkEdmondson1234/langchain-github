@@ -193,9 +193,7 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
         payloadFormat = attributes.get("payloadFormat")
         if eventType == "OBJECT_FINALIZE" and payloadFormat == "JSON_API_V1":
             logging.info("Got valid event from Google Cloud Storage")
-            # add namespace as we didn't make this pubsub topic with it available
-            attributes["attrs"] = f"namespace:{vector_name}"
-
+            
             # https://cloud.google.com/storage/docs/json_api/v1/objects#resource-representations
             message_data = 'gs://' + attributes.get("bucketId") + '/' + attributes.get("objectId")
 
@@ -206,6 +204,7 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
                     logging.info(f"Overwriting vector_name {vector_name} with {bucket_vector_name}")
                     vector_name = bucket_vector_name
 
+            attributes["attrs"] = f"namespace:{vector_name}"
             logging.info(f"Constructed message_data: {message_data}")
     
     
