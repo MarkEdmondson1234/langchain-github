@@ -130,18 +130,33 @@ def read_file_to_document(gs_file: pathlib.Path, split=False, metadata: dict = N
             docs = loader.load()
             logging.info(f"Loaded docs for {gs_file} from UnstructuredAPIFileLoader")
     except ValueError as e:
-        logging.info(f"Error for {gs_file} from UnstructuredAPIFileLoader - trying locally via .txt conversion")
+        logging.info(f"Error for {gs_file} from UnstructuredAPIFileLoader: {str(e)} \
+                    trying locally via .txt conversion")
         if "file type is not supported in partition" in str(e):
-            # Convert the file to .txt and try again
-            txt_file = convert_to_txt(gs_file)
-            loader = UnstructuredFileLoader(txt_file, mode="elements")
-            if split:
-                docs = loader.load_and_split()
-            else:
-                docs = loader.load()
-            os.remove(txt_file)  # Remove the temporary .txt file after processing
+            txt_file = None
+            try:
+                # Convert the file to .txt and try again
+                txt_file = convert_to_txt(gs_file)
+                loader = UnstructuredFileLoader(txt_file, mode="elements")
+                if split:
+                    docs = loader.load_and_split()
+                else:
+                    docs = loader.load()
+
+            except Exception as inner_e:
+                raise Exception("An error occurred during txt conversion or loading.") from inner_e
+
+            finally:
+                # Ensure cleanup happens if txt_file was created
+                if txt_file is not None and os.path.exists(txt_file):
+                    os.remove(txt_file)
+
         else:
-            raise e
+            raise
+
+    except Exception as e:
+        logging.error(f"An unexpected error occurred for {gs_file}: {str(e)}")
+        raise
 
     for doc in docs:
         #doc.metadata["file_sha1"] = file_sha1
