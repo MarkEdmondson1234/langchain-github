@@ -1,5 +1,4 @@
 import psycopg2
-from psycopg2.errors import DuplicateObject
 from psycopg2.extensions import adapt
 import logging
 import os
@@ -27,29 +26,16 @@ def setup_supabase(vector_name:str, verbose:bool=False):
 def delete_row_from_source(source: str, vector_name:str):
     # adapt the user input and decode from bytes to string to protect against sql injection
     source = adapt(source).getquoted().decode()
-    params = {'vector_name': vector_name, 'source_delete': source}
+    sql_params = {'source_delete': source}
+    sql = f"""
+        DELETE FROM {vector_name}
+        WHERE metadata->>'source' = %(source_delete)s
+    """
 
-    execute_sql_from_file("sql/sb/delete_source_row.sql", params)
+    do_sql(sql, sql_params=sql_params)
 
-
-def execute_sql_from_file(filename, params, return_rows=False):
-    return execute_supabase_from_file(filename, params, return_rows)
-
-def execute_supabase_from_file(filepath, params, return_rows=False):
-
-     # Get the directory of this Python script
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    # Build the full filepath by joining the directory with the filename
-    filepath = os.path.join(dir_path, filepath)
-
+def do_sql(sql, sql_params=None, return_rows=False):
     rows = []
-
-    # read the SQL file
-    with open(filepath, 'r') as file:
-        sql = file.read()
-
-    # substitute placeholders in the SQL
-    sql = sql.format(**params)
     connection_string = os.getenv('DB_CONNECTION_STRING', None)
     if connection_string is None:
         raise ValueError("No connection string")
@@ -59,15 +45,13 @@ def execute_supabase_from_file(filepath, params, return_rows=False):
         cursor = connection.cursor()
 
         # execute the SQL - raise the error if already found
-        cursor.execute(sql)
+        cursor.execute(sql, sql_params)
 
         # commit the transaction to save changes to the database
         connection.commit()
 
         if return_rows:
             rows = cursor.fetchall()
-
-        logging.info(f"Successfully executed SQL script from {filepath}")
     
     except (psycopg2.errors.DuplicateObject, 
             psycopg2.errors.DuplicateTable, 
@@ -85,6 +69,30 @@ def execute_supabase_from_file(filepath, params, return_rows=False):
             logging.info("PostgreSQL connection is closed")
     
     if rows:
+        return rows
+    
+    return None
+
+
+def execute_sql_from_file(filename, params, return_rows=False):
+    return execute_supabase_from_file(filename, params, return_rows)
+
+def execute_supabase_from_file(filepath, params, return_rows=False):
+
+     # Get the directory of this Python script
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    # Build the full filepath by joining the directory with the filename
+    filepath = os.path.join(dir_path, filepath)
+
+    # read the SQL file
+    with open(filepath, 'r') as file:
+        sql = file.read()
+
+    # substitute placeholders in the SQL
+    sql = sql.format(**params)
+    rows = do_sql(sql, return_rows=return_rows)
+    
+    if rows is not None:
         return rows
     
     return True

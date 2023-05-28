@@ -130,9 +130,9 @@ def read_file_to_document(gs_file: pathlib.Path, split=False, metadata: dict = N
             docs = loader.load()
             logging.info(f"Loaded docs for {gs_file} from UnstructuredAPIFileLoader")
     except ValueError as e:
-        logging.info(f"Error for {gs_file} from UnstructuredAPIFileLoader: {str(e)} \
-                    trying locally via .txt conversion")
+        logging.info(f"Error for {gs_file} from UnstructuredAPIFileLoader: {str(e)}")
         if "file type is not supported in partition" in str(e):
+            logging.info("trying locally via .txt conversion")
             txt_file = None
             try:
                 # Convert the file to .txt and try again
@@ -278,7 +278,8 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
         logging.info("No gs:// detected")
         
         the_json = json.loads(message_data)
-        metadata = the_json.get("metadata", {})
+        the_metadata = the_json.get("metadata", {})
+        metadata.update(the_metadata)
         the_content = the_json.get("page_content", None)
 
         if metadata.get("source", None) is not None:
