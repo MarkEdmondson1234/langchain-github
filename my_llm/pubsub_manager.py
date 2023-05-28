@@ -106,7 +106,10 @@ class PubSubManager:
                 full_subscription_name = f"projects/{self.project_id}/subscriptions/{subscription_name}"
                 logging.info(f"Creating subscription {full_subscription_name}")
                 try:
-                    subscriber.create_subscription(name=full_subscription_name, topic=self.pubsub_topic, push_config=push_config)
+                    subscriber.create_subscription(name=full_subscription_name, 
+                                                   topic=self.pubsub_topic, 
+                                                   ack_deadline_seconds=600,
+                                                   push_config=push_config)
                     logging.info(f"Created push subscription: {full_subscription_name}")
                     if self.verbose:
                         print(f"Created push subscription: {full_subscription_name}")
