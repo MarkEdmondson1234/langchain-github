@@ -19,6 +19,7 @@ from my_llm.pubsub_manager import PubSubManager
 import datetime
 from .database import setup_database
 from .database import delete_row_from_source
+from .database import return_sources_last24
 
 load_dotenv()
 
@@ -353,7 +354,7 @@ def delete_source(source:str, vector_name:str):
     logging.info(f"Deleted source: {source} from {vector_name}")
 
 
-def return_sources_last24(vector_name:str):
+def _return_sources_last24(vector_name:str):
     logging.info(f"Returning sources last 24")
     rows = return_sources_last24(vector_name)
     return rows
