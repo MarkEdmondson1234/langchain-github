@@ -111,7 +111,12 @@ def discord_message(vector_name):
         return jsonify(result)
     
     if user_input.startswith("!help"):
-        result = {"result":f"!returnsources24; !deletesource [source]; !saveurl [url]; !savethread; !help"}
+        result = {"result":f"""`!returnsources24` - get sources added in last 24hrs;\n \
+`!deletesource [gs:// source]` - delete a source from database;\n \
+`!saveurl [https:// url]` - add the contents found at this URL to database;\n \ 
+`!savethread` - save a Discord thread as a text file to database;\n / 
+`!help`- see this message;
+"""}
         return jsonify(result)
 
     bot_output = question_service.qna(user_input, vector_name, chat_history=paired_messages)
