@@ -3,7 +3,7 @@ CREATE OR REPLACE FUNCTION calculate_age_in_days(objectId text, eventTime text)
     LANGUAGE plpgsql
     AS $$
 BEGIN
-    RETURN LOG(1 + EXTRACT(EPOCH FROM NOW() - TO_TIMESTAMP(COALESCE(SUBSTRING(eventTime FROM 1 FOR 19), SUBSTRING(objectId FROM 14 FOR 13)), 'YYYY-MM-DD HH24:MI:SS')) / (60*60*24));
+    RETURN LOG(1 + EXTRACT(EPOCH FROM NOW() - TO_TIMESTAMP(COALESCE(SUBSTRING(eventTime FROM 1 FOR 19), SUBSTRING(objectId FROM 14 FOR 13)), 'YYYY-MM-DD"T"HH24:MI:SS')) / (60*60*24));
 END;
 $$;
 
@@ -22,8 +22,8 @@ BEGIN
     WITH latest_documents AS (
         SELECT *
         FROM {vector_name}
-        WHERE (metadata->>'objectId', TO_TIMESTAMP(COALESCE(SUBSTRING(metadata->>'eventTime' FROM 1 FOR 19), SUBSTRING(metadata->>'objectId' FROM 14 FOR 13)), 'YYYY-MM-DD HH24:MI:SS')) IN (
-            SELECT metadata->>'objectId', MAX(TO_TIMESTAMP(COALESCE(SUBSTRING(metadata->>'eventTime' FROM 1 FOR 19), SUBSTRING(metadata->>'objectId' FROM 14 FOR 13)), 'YYYY-MM-DD HH24:MI:SS'))
+        WHERE (metadata->>'objectId', TO_TIMESTAMP(COALESCE(SUBSTRING(metadata->>'eventTime' FROM 1 FOR 19), SUBSTRING(metadata->>'objectId' FROM 14 FOR 13)), 'YYYY-MM-DD"T"HH24:MI:SS')) IN (
+            SELECT metadata->>'objectId', MAX(TO_TIMESTAMP(COALESCE(SUBSTRING(metadata->>'eventTime' FROM 1 FOR 19), SUBSTRING(metadata->>'objectId' FROM 14 FOR 13)), 'YYYY-MM-DD"T"HH24:MI:SS'))
             FROM {vector_name}
             GROUP BY metadata->>'objectId'
         )
@@ -33,12 +33,12 @@ BEGIN
         content,
         metadata,
         embedding,
-        1 -({vector_name}.embedding <=> query_embedding) - calculate_age_in_days(metadata->>'objectId', metadata->>'eventTime') AS similarity
+        1 -(latest_documents.embedding <=> query_embedding) - calculate_age_in_days(metadata->>'objectId', metadata->>'eventTime') AS similarity
     FROM
         latest_documents
     ORDER BY
-        2 * (1 -({vector_name}.embedding <=> query_embedding)) - calculate_age_in_days(metadata->>'objectId', metadata->>'eventTime') DESC,
-        TO_TIMESTAMP(COALESCE(SUBSTRING(metadata->>'eventTime' FROM 1 FOR 19), SUBSTRING(metadata->>'objectId' FROM 14 FOR 13)), 'YYYY-MM-DD HH24:MI:SS') DESC
+        2 * (1 -(latest_documents.embedding <=> query_embedding)) - calculate_age_in_days(metadata->>'objectId', metadata->>'eventTime') DESC,
+        TO_TIMESTAMP(COALESCE(SUBSTRING(metadata->>'eventTime' FROM 1 FOR 19), SUBSTRING(metadata->>'objectId' FROM 14 FOR 13)), 'YYYY-MM-DD"T"HH24:MI:SS') DESC
     LIMIT match_count;
 END;
 $$;
