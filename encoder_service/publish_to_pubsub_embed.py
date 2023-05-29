@@ -351,3 +351,9 @@ def delete_source(source:str, vector_name:str):
     logging.info(f"Deleting source: {source} from {vector_name}")
     delete_row_from_source(source, vector_name)
     logging.info(f"Deleted source: {source} from {vector_name}")
+
+
+def return_sources_last24(vector_name:str):
+    logging.info(f"Returning sources last 24")
+    rows = return_sources_last24(vector_name)
+    return rows

@@ -102,6 +102,12 @@ def discord_message(vector_name):
         publish_to_pubsub_embed.delete_source(source, vector_name=vector_name)
         result = {"result": f"Deleting source: {source}"}
         return jsonify(result)
+    
+    if user_input.startswith("!returnsources24"):
+        rows = publish_to_pubsub_embed.return_sources_last24(vector_name)
+        result = {"result":f"Here are the sources added in the last 24 hours for {vector_name}",
+                  "source_documents": rows}
+        return jsonify(result)
 
     bot_output = question_service.qna(user_input, vector_name, chat_history=paired_messages)
     

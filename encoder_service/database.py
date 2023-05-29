@@ -23,6 +23,10 @@ def setup_supabase(vector_name:str, verbose:bool=False):
     
     return True
 
+def return_sources_last24(vector_name:str):
+    params = {'vector_name': vector_name}
+    execute_sql_from_file("sql/sb/return_source_rows.sql", params, return_rows=True)
+
 def delete_row_from_source(source: str, vector_name:str):
     # adapt the user input and decode from bytes to string to protect against sql injection
     source = adapt(source).getquoted().decode()
