@@ -116,6 +116,7 @@ def discord_message(vector_name):
 `!saveurl [https:// url]` - add the contents found at this URL to database;\n \ 
 `!savethread` - save a Discord thread as a text file to database;\n / 
 `!help`- see this message;
+**Files attached to messages will also be uploaded**
 """}
         return jsonify(result)
 
