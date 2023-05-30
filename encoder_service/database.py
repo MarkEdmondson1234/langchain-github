@@ -96,7 +96,8 @@ def execute_supabase_from_file(filepath, params, return_rows=False):
     sql = sql.format(**params)
     rows = do_sql(sql, return_rows=return_rows)
     
-    if rows is not None:
+    if return_rows:
+        if rows is None: return None
         return rows
     
     return True
