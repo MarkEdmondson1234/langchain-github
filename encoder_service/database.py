@@ -25,7 +25,7 @@ def setup_supabase(vector_name:str, verbose:bool=False):
 
 def return_sources_last24(vector_name:str):
     params = {'vector_name': vector_name, 'time_period':'1 day'}
-    return execute_sql_from_file("sql/sb/return_source_row.sql", params, return_rows=True)
+    return execute_sql_from_file("sql/sb/return_sources.sql", params, return_rows=True)
 
 def delete_row_from_source(source: str, vector_name:str):
     # adapt the user input and decode from bytes to string to protect against sql injection
