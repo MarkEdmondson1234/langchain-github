@@ -108,10 +108,11 @@ def discord_message(vector_name):
         rows = publish_to_pubsub_embed.return_sources_last24_(vector_name)
 
         if rows is None:
-            rows = ["No sources were added in last 24hrs"]
+            result = {"result": "No sources were found"}
+        else:
+            msg = "\n".join([f"{row}" for row in rows])
+            result = {"result": f"*sources:*\n{msg}"}
 
-        result = {"result":f"Here are the sources added in the last 24 hours for {vector_name}",
-                  "source_documents": rows}
         return jsonify(result)
     
     if user_input.startswith("!help"):
