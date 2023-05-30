@@ -111,12 +111,12 @@ def discord_message(vector_name):
         return jsonify(result)
     
     if user_input.startswith("!help"):
-        result = {"result":f"""`!returnsources24` - get sources added in last 24hrs;\n \
-`!deletesource [gs:// source]` - delete a source from database;\n \
-`!saveurl [https:// url]` - add the contents found at this URL to database;\n \ 
-`!savethread` - save a Discord thread as a text file to database;\n / 
-`!help`- see this message;
-**Files attached to messages will also be uploaded**
+        result = {"result":f"""`!returnsources24` - get sources added in last 24hrs;
+* `!deletesource [gs:// source]` - delete a source from database;
+* `!saveurl [https:// url]` - add the contents found at this URL to database;
+* `!savethread` - save a Discord thread as a text file to database;
+* `!help`- see this message;
+* *Files attached to messages will be uploaded*
 """}
         return jsonify(result)
 
