@@ -104,14 +104,14 @@ def discord_message(vector_name):
         result = {"result": f"Deleting source: {source}"}
         return jsonify(result)
     
-    if user_input.startswith("!returnsources24"):
+    if user_input.startswith("!sources"):
         rows = publish_to_pubsub_embed.return_sources_last24_(vector_name)
         result = {"result":f"Here are the sources added in the last 24 hours for {vector_name}",
                   "source_documents": rows}
         return jsonify(result)
     
     if user_input.startswith("!help"):
-        result = {"result":f"""`!returnsources24` - get sources added in last 24hrs;
+        result = {"result":f"""`!sources` - get sources added in last 24hrs;
 * `!deletesource [gs:// source]` - delete a source from database;
 * `!saveurl [https:// url]` - add the contents found at this URL to database;
 * `!savethread` - save a Discord thread as a text file to database;
