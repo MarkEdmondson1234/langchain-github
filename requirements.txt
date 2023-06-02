@@ -1,4 +1,4 @@
-langchain>=0.0.180
+langchain>=0.0.188
 openai
 chromadb
 tiktoken
@@ -18,3 +18,5 @@ google-api-python-client
 google-auth-httplib2
 google-auth-oauthlib
 psycopg2-binary
+google-cloud-aiplatform
+google-generativeai
