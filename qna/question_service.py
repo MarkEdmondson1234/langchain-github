@@ -49,8 +49,6 @@ def qna(question: str, vector_name: str, chat_history=None):
 
     retriever = vectorstore.as_retriever(search_kwargs=dict(k=4))
 
-    llm = OpenAI(temperature=0)
-
     qa = ConversationalRetrievalChain.from_llm(llm, 
                                                retriever=retriever, 
                                                return_source_documents=True,
