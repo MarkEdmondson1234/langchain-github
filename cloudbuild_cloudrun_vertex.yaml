@@ -48,8 +48,8 @@ steps:
            --memory 2Gi \
            --cpu 1 \
            --max-instances 2 \
-           --service-account ${_SERVICE_ACCOUNT}
-           --no-traffic
+           --service-account ${_SERVICE_ACCOUNT} \
+           --no-traffic \
            --tag vertex
 
   # Get service URL

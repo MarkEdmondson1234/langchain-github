@@ -49,7 +49,7 @@ steps:
            --memory 2Gi \
            --cpu 1 \
            --max-instances 2 \
-           --service-account ${_SERVICE_ACCOUNT}
+           --service-account ${_SERVICE_ACCOUNT} \
            --tag openai
 
   # Get service URL
