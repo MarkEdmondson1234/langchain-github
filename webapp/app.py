@@ -1,6 +1,5 @@
 import sys, os, requests
 import tempfile
-import random, time
 import datetime
 
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
