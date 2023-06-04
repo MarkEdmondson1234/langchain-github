@@ -19,7 +19,7 @@ def qna(question: str, vector_name: str, chat_history=None):
 
     llm = None
     embeddings = None
-    llm_str = 'openai' if sys.getenv('OPENAI_API_KEY', None) is not None else 'vertex'
+    llm_str = 'openai' if os.getenv('OPENAI_API_KEY', None) is not None else 'vertex'
     logging.info(f'Using embeddings: {llm_str}')
 
     if llm_str == 'openai':
