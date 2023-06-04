@@ -313,6 +313,9 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
     publish_chunks(chunks, vector_name=vector_name)
 
     logging.info(f"data_to_embed_pubsub published chunks with metadata: {metadata}")
+    pubsub_manager = PubSubManager(vector_name, pubsub_topic=f"pubsub_state_messages")
+    pubsub_manager.publish_message(f"pubsub_chunk - Added doc with metadata: {metadata} to {vector_name}")
+
 
     return metadata
 
