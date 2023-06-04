@@ -165,6 +165,8 @@ def read_file_to_document(gs_file: pathlib.Path, split=False, metadata: dict = N
         if metadata is not None:
             doc.metadata.update(metadata)
 
+    logging.info(f"gs_file: {gs_file} turned into {len(docs)} documents")
+
     return docs
 
 def choose_splitter(extension: str, chunk_size: int=1024, chunk_overlap:int=0):
@@ -181,13 +183,13 @@ def remove_whitespace(page_content: str):
 
 def chunk_doc_to_docs(documents: list, extension: str = ".md"):
     """Turns a Document object into a list of many Document chunks"""
+    source_chunks = []
     for document in documents:
-        source_chunks = []
         splitter = choose_splitter(extension)
         for chunk in splitter.split_text(remove_whitespace(document.page_content)):
             source_chunks.append(Document(page_content=chunk, metadata=document.metadata))
 
-        return source_chunks  
+    return source_chunks  
 
 def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
     """Triggered from a message on a Cloud Pub/Sub topic.
@@ -258,6 +260,7 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
 
             docs = read_file_to_document(tmp_file_path, metadata=metadata)
             chunks = chunk_doc_to_docs(docs, file_name.suffix)
+            logging.info(f"Split {file_name} into {len(chunks)} chunks")
 
     elif message_data.startswith("http"):
         logging.info(f"Got http message: {message_data}")
@@ -274,6 +277,7 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
             docs.extend(doc)
 
         chunks = chunk_doc_to_docs(docs)
+        logging.info(f"Split {url} into {len(chunks)} chunks")
 
     else:
         logging.info("No gs:// detected")
@@ -295,6 +299,7 @@ def data_to_embed_pubsub(data: dict, vector_name:str="documents"):
         publish_if_urls(the_content, vector_name)
 
         chunks = chunk_doc_to_docs(docs)
+        logging.info(f"Split content into {len(chunks)} chunks")
         
     publish_chunks(chunks, vector_name=vector_name)
 
