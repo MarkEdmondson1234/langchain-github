@@ -53,7 +53,7 @@ def from_pubsub_to_supabase(data: dict, vector_name:str):
     supabase_key = os.getenv('SUPABASE_KEY')
 
     logging.info(f"Supabase URL: {supabase_url}")
-    llm_str = 'openai' if sys.getenv('OPENAI_API_KEY', None) is not None else 'vertex'
+    llm_str = 'openai' if os.getenv('OPENAI_API_KEY', None) is not None else 'vertex'
     logging.info(f'Using embeddings: {llm_str}')
 
     if llm_str == 'openai':
