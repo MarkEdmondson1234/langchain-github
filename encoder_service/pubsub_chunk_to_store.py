@@ -1,6 +1,8 @@
 # imports
-import os
+import os, sys
 from langchain.embeddings import OpenAIEmbeddings
+from langchain.embeddings import VertexAIEmbeddings
+
 from langchain.docstore.document import Document
 import base64
 import json
@@ -51,7 +53,16 @@ def from_pubsub_to_supabase(data: dict, vector_name:str):
     supabase_key = os.getenv('SUPABASE_KEY')
 
     logging.info(f"Supabase URL: {supabase_url}")
-    embeddings = OpenAIEmbeddings()
+    llm_str = 'openai' if sys.getenv('OPENAI_API_KEY', None) is not None else 'vertex'
+    logging.info(f'Using embeddings: {llm_str}')
+
+    if llm_str == 'openai':
+        embeddings = OpenAIEmbeddings()
+    elif llm_str == 'vertex':
+        embeddings = VertexAIEmbeddings()
+    else:
+        raise NotImplementedError(f'No llm implemented for {llm_str}')
+    
     supabase: Client = create_client(supabase_url, supabase_key)
 
     # ensure the supabase sql function and table has been created before using this
